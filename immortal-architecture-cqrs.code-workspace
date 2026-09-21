@@ -1,0 +1,24 @@
+{
+	"folders": [
+		{
+			"path": ".",
+			"name": "🌍 Root"
+		},
+		{
+			"path": "./docs",
+			"name": "📚 DOCS"
+		},
+		{
+			"path": "./api-schema",
+			"name": "📐 API SCHEMA"
+		},
+		{
+			"path": "./frontend/",
+			"name": "💻 FRONTEND"
+		},
+		{
+			"path": "./backend-clean/",
+			"name": "🛠️ BACKEND"
+		}
+	]
+}

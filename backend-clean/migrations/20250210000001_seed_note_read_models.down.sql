@@ -1,0 +1,1 @@
+-- No-op: seeded data will be removed when note_read_models table is dropped.

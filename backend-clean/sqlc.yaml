@@ -1,0 +1,23 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    schema:
+      - "migrations/20250209000000_init_schema.up.sql"
+      - "migrations/20250210000000_add_note_read_models.up.sql"
+    queries: "internal/adapter/gateway/db/sqlc/queries"
+    gen:
+      go:
+        package: "generated"
+        out: "internal/adapter/gateway/db/sqlc/generated"
+        sql_package: "pgx/v5"
+        emit_db_tags: true
+        emit_json_tags: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: true
+        overrides:
+          - column: "notes.status"
+            go_type:
+              type: "string"
+          - column: "note_read_models.status"
+            go_type:
+              type: "string"

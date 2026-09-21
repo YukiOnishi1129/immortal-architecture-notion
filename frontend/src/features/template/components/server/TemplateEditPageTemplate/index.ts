@@ -1,0 +1,1 @@
+export { TemplateEditPageTemplate } from "./TemplateEditPageTemplate";

@@ -1,0 +1,1 @@
+export { TemplateListPageTemplate } from "./TemplateListPageTemplate";

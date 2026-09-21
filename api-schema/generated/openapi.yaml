@@ -1,0 +1,1075 @@
+openapi: 3.0.0
+info:
+  title: Mini Notion API
+  version: 0.0.0
+tags:
+  - name: Accounts
+  - name: Templates
+  - name: Notes
+paths:
+  /api/accounts/auth:
+    post:
+      operationId: Accounts_createOrGetAccount
+      summary: Create or get account via OAuth
+      description: OAuth認証（内部処理）
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.AccountResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.BadRequestError'
+      tags:
+        - Accounts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Models.CreateOrGetAccountRequest'
+  /api/accounts/by-email:
+    get:
+      operationId: Accounts_getAccountByEmail
+      summary: Get account by email
+      description: メールアドレスでアカウント取得
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.AccountResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Models.NotFoundError'
+                  - $ref: '#/components/schemas/Models.UnauthorizedError'
+      tags:
+        - Accounts
+  /api/accounts/me:
+    get:
+      operationId: Accounts_getCurrentAccount
+      summary: Get current account
+      description: 現在のアカウント取得
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.AccountResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.UnauthorizedError'
+      tags:
+        - Accounts
+  /api/accounts/{accountId}:
+    get:
+      operationId: Accounts_getAccountById
+      summary: Get account by ID
+      description: アカウント詳細取得
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.AccountResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Models.NotFoundError'
+                  - $ref: '#/components/schemas/Models.UnauthorizedError'
+      tags:
+        - Accounts
+  /api/notes:
+    get:
+      operationId: Notes_listNotes
+      summary: Get notes list
+      description: ノート一覧取得
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: タイトルキーワード検索
+          schema:
+            type: string
+          explode: false
+        - name: status
+          in: query
+          required: false
+          description: ステータスフィルター
+          schema:
+            $ref: '#/components/schemas/Models.NoteStatus'
+          explode: false
+        - name: templateId
+          in: query
+          required: false
+          description: テンプレートIDフィルター
+          schema:
+            type: string
+          explode: false
+        - name: ownerId
+          in: query
+          required: false
+          description: 所有者IDフィルター
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Models.NoteResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.UnauthorizedError'
+      tags:
+        - Notes
+    post:
+      operationId: Notes_createNote
+      summary: Create note
+      description: ノート作成
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.NoteResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Models.BadRequestError'
+                  - $ref: '#/components/schemas/Models.UnauthorizedError'
+      tags:
+        - Notes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Models.CreateNoteRequest'
+  /api/notes/{noteId}:
+    get:
+      operationId: Notes_getNoteById
+      summary: Get note by ID
+      description: ノート詳細取得
+      parameters:
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.NoteResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Models.NotFoundError'
+                  - $ref: '#/components/schemas/Models.UnauthorizedError'
+      tags:
+        - Notes
+    put:
+      operationId: Notes_updateNote
+      summary: Update note
+      description: ノート更新
+      parameters:
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: ownerId
+          in: query
+          required: true
+          description: 所有者ID（権限チェック用）
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.NoteResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Models.NotFoundError'
+                  - $ref: '#/components/schemas/Models.ForbiddenError'
+                  - $ref: '#/components/schemas/Models.BadRequestError'
+                  - $ref: '#/components/schemas/Models.UnauthorizedError'
+      tags:
+        - Notes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Models.UpdateNoteRequest'
+    delete:
+      operationId: Notes_deleteNote
+      summary: Delete note
+      description: ノート削除
+      parameters:
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: ownerId
+          in: query
+          required: true
+          description: 所有者ID（権限チェック用）
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.SuccessResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Models.NotFoundError'
+                  - $ref: '#/components/schemas/Models.ForbiddenError'
+                  - $ref: '#/components/schemas/Models.UnauthorizedError'
+      tags:
+        - Notes
+  /api/notes/{noteId}/publish:
+    post:
+      operationId: Notes_publishNote
+      summary: Publish note
+      description: ノート公開
+      parameters:
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: ownerId
+          in: query
+          required: true
+          description: 所有者ID（公開権限チェック用）
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.NoteResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Models.NotFoundError'
+                  - $ref: '#/components/schemas/Models.ForbiddenError'
+                  - $ref: '#/components/schemas/Models.BadRequestError'
+                  - $ref: '#/components/schemas/Models.UnauthorizedError'
+      tags:
+        - Notes
+  /api/notes/{noteId}/unpublish:
+    post:
+      operationId: Notes_unpublishNote
+      summary: Unpublish note
+      description: ノート公開取り消し
+      parameters:
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: ownerId
+          in: query
+          required: true
+          description: 所有者ID（公開権限チェック用）
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.NoteResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Models.NotFoundError'
+                  - $ref: '#/components/schemas/Models.ForbiddenError'
+                  - $ref: '#/components/schemas/Models.BadRequestError'
+                  - $ref: '#/components/schemas/Models.UnauthorizedError'
+      tags:
+        - Notes
+  /api/templates:
+    get:
+      operationId: Templates_listTemplates
+      summary: Get templates list
+      description: テンプレート一覧取得
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: テンプレート名のキーワード検索
+          schema:
+            type: string
+          explode: false
+        - name: ownerId
+          in: query
+          required: false
+          description: 所有者IDフィルター
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Models.TemplateResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.UnauthorizedError'
+      tags:
+        - Templates
+    post:
+      operationId: Templates_createTemplate
+      summary: Create template
+      description: テンプレート作成
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.TemplateResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Models.BadRequestError'
+                  - $ref: '#/components/schemas/Models.UnauthorizedError'
+      tags:
+        - Templates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Models.CreateTemplateRequest'
+  /api/templates/{templateId}:
+    get:
+      operationId: Templates_getTemplateById
+      summary: Get template by ID
+      description: テンプレート詳細取得
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.TemplateResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Models.NotFoundError'
+                  - $ref: '#/components/schemas/Models.UnauthorizedError'
+      tags:
+        - Templates
+    put:
+      operationId: Templates_updateTemplate
+      summary: Update template
+      description: テンプレート更新
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: ownerId
+          in: query
+          required: true
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.TemplateResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Models.NotFoundError'
+                  - $ref: '#/components/schemas/Models.ForbiddenError'
+                  - $ref: '#/components/schemas/Models.BadRequestError'
+                  - $ref: '#/components/schemas/Models.UnauthorizedError'
+      tags:
+        - Templates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Models.UpdateTemplateRequest'
+    delete:
+      operationId: Templates_deleteTemplate
+      summary: Delete template
+      description: テンプレート削除
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: ownerId
+          in: query
+          required: true
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Models.SuccessResponse'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Models.NotFoundError'
+                  - $ref: '#/components/schemas/Models.ForbiddenError'
+                  - $ref: '#/components/schemas/Models.BadRequestError'
+                  - $ref: '#/components/schemas/Models.UnauthorizedError'
+      tags:
+        - Templates
+components:
+  schemas:
+    Models.Account:
+      type: object
+      required:
+        - id
+        - email
+        - firstName
+        - lastName
+        - fullName
+        - lastLoginAt
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          description: アカウントID
+        email:
+          type: string
+          description: メールアドレス
+        firstName:
+          type: string
+          description: 名前
+        lastName:
+          type: string
+          description: 苗字
+        fullName:
+          type: string
+          description: フルネーム
+        thumbnail:
+          type: string
+          description: プロフィール画像URL
+        lastLoginAt:
+          type: string
+          format: date-time
+          description: 最終ログイン日時
+        createdAt:
+          type: string
+          format: date-time
+          description: 作成日時
+        updatedAt:
+          type: string
+          format: date-time
+          description: 更新日時
+      description: アカウント情報
+    Models.AccountResponse:
+      type: object
+      required:
+        - id
+        - email
+        - firstName
+        - lastName
+        - fullName
+        - lastLoginAt
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          description: アカウントID
+        email:
+          type: string
+          description: メールアドレス
+        firstName:
+          type: string
+          description: 名前
+        lastName:
+          type: string
+          description: 苗字
+        fullName:
+          type: string
+          description: フルネーム
+        thumbnail:
+          type: string
+          description: プロフィール画像URL
+        lastLoginAt:
+          type: string
+          format: date-time
+          description: 最終ログイン日時
+        createdAt:
+          type: string
+          format: date-time
+          description: 作成日時
+        updatedAt:
+          type: string
+          format: date-time
+          description: 更新日時
+      description: アカウントレスポンス
+    Models.AccountSummary:
+      type: object
+      required:
+        - id
+        - firstName
+        - lastName
+      properties:
+        id:
+          type: string
+          description: アカウントID
+        firstName:
+          type: string
+          description: 名前
+        lastName:
+          type: string
+          description: 苗字
+        thumbnail:
+          type: string
+          description: プロフィール画像URL
+      description: 簡易アカウント情報（他のレスポンスに埋め込まれる）
+    Models.BadRequestError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - BAD_REQUEST
+        message:
+          type: string
+        details: {}
+      description: Bad Request エラー
+    Models.CreateFieldRequest:
+      type: object
+      required:
+        - label
+        - order
+        - isRequired
+      properties:
+        label:
+          type: string
+          minLength: 1
+          description: ラベル
+        order:
+          type: integer
+          format: int32
+          minimum: 1
+          description: 表示順序
+        isRequired:
+          type: boolean
+          description: 必須フラグ
+      description: テンプレートフィールド作成リクエスト
+    Models.CreateNoteRequest:
+      type: object
+      required:
+        - title
+        - templateId
+        - ownerId
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: タイトル
+        templateId:
+          type: string
+          format: uuid
+          description: テンプレートID
+        ownerId:
+          type: string
+          format: uuid
+          description: 所有者ID
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/Models.CreateSectionRequest'
+          description: セクション（オプション）
+      description: ノート作成リクエスト
+    Models.CreateOrGetAccountRequest:
+      type: object
+      required:
+        - email
+        - name
+        - provider
+        - providerAccountId
+      properties:
+        email:
+          type: string
+          description: メールアドレス
+        name:
+          type: string
+          description: 名前
+        provider:
+          type: string
+          description: 'プロバイダー（例: google）'
+        providerAccountId:
+          type: string
+          description: プロバイダーのアカウントID
+        thumbnail:
+          type: string
+          description: プロフィール画像URL
+      description: OAuth認証リクエスト
+    Models.CreateSectionRequest:
+      type: object
+      required:
+        - fieldId
+        - content
+      properties:
+        fieldId:
+          type: string
+          description: フィールドID
+        content:
+          type: string
+          description: 内容
+      description: セクション作成リクエスト
+    Models.CreateTemplateRequest:
+      type: object
+      required:
+        - name
+        - ownerId
+        - fields
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: テンプレート名
+        ownerId:
+          type: string
+          format: uuid
+          description: 所有者ID
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/Models.CreateFieldRequest'
+          description: フィールド一覧
+      description: テンプレート作成リクエスト
+    Models.ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: エラーコード
+        message:
+          type: string
+          description: エラーメッセージ
+        details:
+          description: 詳細情報（オプション）
+      description: 共通エラーレスポンス
+    Models.Field:
+      type: object
+      required:
+        - id
+        - label
+        - order
+        - isRequired
+      properties:
+        id:
+          type: string
+          description: フィールドID
+        label:
+          type: string
+          minLength: 1
+          description: ラベル
+        order:
+          type: integer
+          format: int32
+          minimum: 1
+          description: 表示順序
+        isRequired:
+          type: boolean
+          description: 必須フラグ
+      description: テンプレートフィールド
+    Models.ForbiddenError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - FORBIDDEN
+        message:
+          type: string
+      description: Forbidden エラー
+    Models.NotFoundError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - NOT_FOUND
+        message:
+          type: string
+      description: Not Found エラー
+    Models.NoteFilters:
+      type: object
+      properties:
+        q:
+          type: string
+          description: タイトルキーワード検索
+        status:
+          allOf:
+            - $ref: '#/components/schemas/Models.NoteStatus'
+          description: ステータスフィルター
+        templateId:
+          type: string
+          description: テンプレートIDフィルター
+        ownerId:
+          type: string
+          description: 所有者IDフィルター
+      description: ノートフィルター（クエリパラメータ）
+    Models.NoteResponse:
+      type: object
+      required:
+        - id
+        - title
+        - templateId
+        - templateName
+        - ownerId
+        - owner
+        - status
+        - sections
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          description: ノートID
+        title:
+          type: string
+          description: タイトル
+        templateId:
+          type: string
+          description: テンプレートID
+        templateName:
+          type: string
+          description: テンプレート名
+        ownerId:
+          type: string
+          description: 所有者ID
+        owner:
+          allOf:
+            - $ref: '#/components/schemas/Models.AccountSummary'
+          description: 所有者情報
+        status:
+          allOf:
+            - $ref: '#/components/schemas/Models.NoteStatus'
+          description: ステータス
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/Models.Section'
+          description: セクション
+        createdAt:
+          type: string
+          format: date-time
+          description: 作成日時
+        updatedAt:
+          type: string
+          format: date-time
+          description: 更新日時
+      description: ノートレスポンス
+    Models.NoteStatus:
+      type: string
+      enum:
+        - Draft
+        - Publish
+      description: ノートのステータス
+    Models.Section:
+      type: object
+      required:
+        - id
+        - fieldId
+        - fieldLabel
+        - content
+        - isRequired
+      properties:
+        id:
+          type: string
+          description: セクションID
+        fieldId:
+          type: string
+          description: フィールドID
+        fieldLabel:
+          type: string
+          description: フィールドラベル
+        content:
+          type: string
+          description: 内容
+        isRequired:
+          type: boolean
+          description: 必須項目かどうか
+      description: セクション（ノートの各項目）
+    Models.SuccessResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+      description: 成功レスポンス（削除など）
+    Models.TemplateResponse:
+      type: object
+      required:
+        - id
+        - name
+        - ownerId
+        - owner
+        - fields
+        - updatedAt
+        - isUsed
+      properties:
+        id:
+          type: string
+          description: テンプレートID
+        name:
+          type: string
+          description: テンプレート名
+        ownerId:
+          type: string
+          description: 所有者ID
+        owner:
+          allOf:
+            - $ref: '#/components/schemas/Models.AccountSummary'
+          description: 所有者情報
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/Models.Field'
+          description: フィールド一覧
+        updatedAt:
+          type: string
+          format: date-time
+          description: 更新日時
+        isUsed:
+          type: boolean
+          description: 使用中フラグ
+      description: テンプレートレスポンス
+    Models.UnauthorizedError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - UNAUTHORIZED
+        message:
+          type: string
+      description: Unauthorized エラー
+    Models.UpdateFieldRequest:
+      type: object
+      required:
+        - label
+        - order
+        - isRequired
+      properties:
+        id:
+          type: string
+          description: フィールドID（既存フィールドの場合は必須）
+        label:
+          type: string
+          minLength: 1
+          description: ラベル
+        order:
+          type: integer
+          format: int32
+          minimum: 1
+          description: 表示順序
+        isRequired:
+          type: boolean
+          description: 必須フラグ
+      description: フィールド更新リクエスト
+    Models.UpdateNoteRequest:
+      type: object
+      required:
+        - id
+        - title
+        - sections
+      properties:
+        id:
+          type: string
+          description: ノートID
+        title:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: タイトル
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/Models.UpdateSectionRequest'
+          description: セクション
+      description: ノート更新リクエスト
+    Models.UpdateSectionRequest:
+      type: object
+      required:
+        - id
+        - content
+      properties:
+        id:
+          type: string
+          description: セクションID
+        content:
+          type: string
+          description: 内容
+      description: セクション更新リクエスト
+    Models.UpdateTemplateRequest:
+      type: object
+      required:
+        - id
+        - name
+        - fields
+      properties:
+        id:
+          type: string
+          description: テンプレートID
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: テンプレート名
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/Models.UpdateFieldRequest'
+          description: フィールド一覧
+      description: テンプレート更新リクエスト
+servers:
+  - url: https://api.mini-notion.com
+    description: Production server
+    variables: {}
+  - url: http://localhost:8080
+    description: Development server
+    variables: {}

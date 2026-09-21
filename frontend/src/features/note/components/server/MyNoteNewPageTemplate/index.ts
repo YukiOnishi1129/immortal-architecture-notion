@@ -1,0 +1,1 @@
+export { MyNoteNewPageTemplate } from "./MyNoteNewPageTemplate";

@@ -1,0 +1,12 @@
+{
+  "go.lintTool": "golangci-lint",
+  "go.lintOnSave": "file",
+  "go.toolsEnvVars": {
+    "GOCACHE": "${workspaceFolder}/.gocache",
+    "GOMODCACHE": "${workspaceFolder}/.gomodcache",
+    "GOLANGCI_LINT": "${env:GOPATH}/bin/golangci-lint"
+  },
+  "[go]": {
+    "editor.formatOnSave": true
+  }
+}

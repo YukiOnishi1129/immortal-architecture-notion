@@ -1,0 +1,1 @@
+export { NoteListPageTemplate } from "./NoteListPageTemplate";

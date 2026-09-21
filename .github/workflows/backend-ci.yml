@@ -1,0 +1,39 @@
+name: Backend CI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "backend-clean/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "backend-clean/**"
+      - ".github/workflows/backend-ci.yml"
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend-clean
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.1"
+      - name: Install tools
+        run: |
+          go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.63.4
+      - name: Lint
+        run: make lint
+      - name: Test
+        run: make test
+      - name: Generate sqlc
+        run: make sqlc
+      - name: Build
+        run: make build

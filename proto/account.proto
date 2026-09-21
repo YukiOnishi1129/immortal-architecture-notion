@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package account.v1;
+
+option go_package = "immortal-architecture-cqrs/backend/internal/adapter/grpc/generated/accountpb";
+
+import "google/protobuf/timestamp.proto";
+
+// AccountService provides account-related operations
+service AccountService {
+  // GetAccountById retrieves an account by ID
+  rpc GetAccountById(GetAccountByIdRequest) returns (AccountResponse);
+
+  // GetAccountByEmail retrieves an account by email
+  rpc GetAccountByEmail(GetAccountByEmailRequest) returns (AccountResponse);
+
+  // CreateOrGetAccount creates or retrieves an OAuth account
+  rpc CreateOrGetAccount(CreateOrGetAccountRequest) returns (AccountResponse);
+}
+
+message GetAccountByIdRequest {
+  string account_id = 1;
+}
+
+message GetAccountByEmailRequest {
+  string email = 1;
+}
+
+message CreateOrGetAccountRequest {
+  string email = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string provider = 4;
+  string provider_account_id = 5;
+  optional string thumbnail = 6;
+}
+
+message AccountResponse {
+  string id = 1;
+  string email = 2;
+  string first_name = 3;
+  string last_name = 4;
+  string full_name = 5;
+  optional string thumbnail = 6;
+  google.protobuf.Timestamp last_login_at = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+}

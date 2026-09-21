@@ -1,0 +1,7 @@
+.gocache
+.gomodcache
+.env
+.tools
+migrate
+api
+main

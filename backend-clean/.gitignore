@@ -1,0 +1,8 @@
+.gocache
+.gomodcache
+.env
+.tools
+migrate
+main
+
+/bin/grpc

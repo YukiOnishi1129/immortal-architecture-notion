@@ -1,0 +1,26 @@
+{
+  "name": "@mini-notion/api-schema",
+  "version": "1.0.0",
+  "description": "TypeSpec-based API schema for Mini Notion",
+  "scripts": {
+    "generate": "pnpm run generate:openapi && pnpm run generate:ts",
+    "generate:openapi": "./scripts/generate-openapi.sh",
+    "generate:ts": "./scripts/generate-ts.sh"
+  },
+  "devDependencies": {
+    "@typespec/compiler": "^0.60.0",
+    "@typespec/http": "^0.60.0",
+    "@typespec/openapi3": "^0.60.0",
+    "@openapitools/openapi-generator-cli": "^2.13.0"
+  },
+  "keywords": [
+    "typespec",
+    "openapi",
+    "api",
+    "schema",
+    "code-generation"
+  ],
+  "author": "Mini Notion Team",
+  "license": "MIT",
+  "packageManager": "pnpm@10.22.0"
+}

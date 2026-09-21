@@ -1,0 +1,22 @@
+FROM golang:1.25
+
+WORKDIR /app
+
+ENV CGO_ENABLED=1 \
+    GO111MODULE=on
+
+# Install Air for hot reload
+RUN go install github.com/air-verse/air@latest
+
+# Pre-fetch modules for faster startup
+COPY backend-clean/go.mod backend-clean/go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go mod download
+
+# Copy the application source (will be overridden by volume mounts in dev)
+COPY backend-clean/ .
+
+EXPOSE 8080
+
+CMD ["air", "-c", ".air.toml"]

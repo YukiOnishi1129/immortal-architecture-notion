@@ -1,0 +1,47 @@
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+
+linters:
+  enable:
+    - govet
+    - staticcheck
+    - gosimple
+    - ineffassign
+    - gofmt
+    - goimports
+    - gocyclo
+    - misspell
+    - errcheck
+    - revive
+  disable:
+    - depguard
+  presets:
+    - bugs
+    - unused
+
+linters-settings:
+  gocyclo:
+    min-complexity: 25
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+  misspell:
+    locale: US
+
+issues:
+  exclude-dirs:
+    - internal/generated # auto-generated API clients/models
+    - .gomodcache
+  exclude-files:
+    - ".*_test.go"
+    - "internal/adapter/gateway/db/mock/.*.go"
+    - "internal/adapter/http/controller/mock/.*.go"
+    - "internal/usecase/mock/.*.go"
+  exclude-use-default: false
+  max-same-issues: 3
+  max-issues-per-linter: 0
+  exclude:
+    - "error return value not checked.*Close"
+    - "G108" # false positives on http insecure
