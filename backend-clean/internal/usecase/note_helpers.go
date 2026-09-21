@@ -1,10 +1,10 @@
 package usecase
 
 import (
-	domainerr "immortal-architecture-cqrs/backend/internal/domain/errors"
-	"immortal-architecture-cqrs/backend/internal/domain/note"
-	"immortal-architecture-cqrs/backend/internal/domain/template"
-	"immortal-architecture-cqrs/backend/internal/port"
+	domainerr "immortal-architecture-notion/backend/internal/domain/errors"
+	"immortal-architecture-notion/backend/internal/domain/note"
+	"immortal-architecture-notion/backend/internal/domain/template"
+	"immortal-architecture-notion/backend/internal/port"
 )
 
 func buildSections(noteID string, inputs []port.SectionInput) ([]note.Section, error) {

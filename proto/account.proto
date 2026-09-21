@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package account.v1;
 
-option go_package = "immortal-architecture-cqrs/backend/internal/adapter/grpc/generated/accountpb";
+option go_package = "immortal-architecture-notion/backend/internal/adapter/grpc/generated/accountpb";
 
 import "google/protobuf/timestamp.proto";
 

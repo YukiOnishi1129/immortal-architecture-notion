@@ -3,9 +3,9 @@ package presenter
 import (
 	"context"
 
-	openapi "immortal-architecture-cqrs/backend/internal/adapter/http/generated/openapi"
-	"immortal-architecture-cqrs/backend/internal/domain/note"
-	"immortal-architecture-cqrs/backend/internal/port"
+	openapi "immortal-architecture-notion/backend/internal/adapter/http/generated/openapi"
+	"immortal-architecture-notion/backend/internal/domain/note"
+	"immortal-architecture-notion/backend/internal/port"
 )
 
 // NoteQueryPresenter converts note read models to OpenAPI responses for query operations.

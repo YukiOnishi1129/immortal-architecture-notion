@@ -6,7 +6,7 @@ import (
 	"log"
 	"strconv"
 
-	initializer "immortal-architecture-cqrs/backend/internal/driver/initializer/api"
+	initializer "immortal-architecture-notion/backend/internal/driver/initializer/api"
 )
 
 func main() {

@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"immortal-architecture-cqrs/backend/internal/driver/config"
+	"immortal-architecture-notion/backend/internal/driver/config"
 )
 
 func TestLoad(t *testing.T) {

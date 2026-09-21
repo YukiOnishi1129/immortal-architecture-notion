@@ -8,11 +8,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"immortal-architecture-cqrs/backend/internal/adapter/grpc/generated/accountpb"
-	grpcpresenter "immortal-architecture-cqrs/backend/internal/adapter/grpc/presenter"
-	"immortal-architecture-cqrs/backend/internal/domain/account"
-	domainerr "immortal-architecture-cqrs/backend/internal/domain/errors"
-	"immortal-architecture-cqrs/backend/internal/port"
+	"immortal-architecture-notion/backend/internal/adapter/grpc/generated/accountpb"
+	grpcpresenter "immortal-architecture-notion/backend/internal/adapter/grpc/presenter"
+	"immortal-architecture-notion/backend/internal/domain/account"
+	domainerr "immortal-architecture-notion/backend/internal/domain/errors"
+	"immortal-architecture-notion/backend/internal/port"
 )
 
 // AccountController implements accountpb.AccountServiceServer.

@@ -9,10 +9,10 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"immortal-architecture-cqrs/backend/internal/adapter/gateway/db/sqlc/generated"
-	domainerr "immortal-architecture-cqrs/backend/internal/domain/errors"
-	"immortal-architecture-cqrs/backend/internal/domain/template"
-	"immortal-architecture-cqrs/backend/internal/port"
+	"immortal-architecture-notion/backend/internal/adapter/gateway/db/sqlc/generated"
+	domainerr "immortal-architecture-notion/backend/internal/domain/errors"
+	"immortal-architecture-notion/backend/internal/domain/template"
+	"immortal-architecture-notion/backend/internal/port"
 )
 
 func toTemplateOwner(ownerID pgtype.UUID, first, last string, thumb pgtype.Text) template.Owner {

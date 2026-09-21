@@ -341,7 +341,7 @@ const file_proto_account_proto_rawDesc = "" +
 	"\x0eAccountService\x12P\n" +
 	"\x0eGetAccountById\x12!.account.v1.GetAccountByIdRequest\x1a\x1b.account.v1.AccountResponse\x12V\n" +
 	"\x11GetAccountByEmail\x12$.account.v1.GetAccountByEmailRequest\x1a\x1b.account.v1.AccountResponse\x12X\n" +
-	"\x12CreateOrGetAccount\x12%.account.v1.CreateOrGetAccountRequest\x1a\x1b.account.v1.AccountResponseBOZMimmortal-architecture-cqrs/backend/internal/adapter/grpc/generated/accountpbb\x06proto3"
+	"\x12CreateOrGetAccount\x12%.account.v1.CreateOrGetAccountRequest\x1a\x1b.account.v1.AccountResponseBOZMimmortal-architecture-notion/backend/internal/adapter/grpc/generated/accountpbb\x06proto3"
 
 var (
 	file_proto_account_proto_rawDescOnce sync.Once

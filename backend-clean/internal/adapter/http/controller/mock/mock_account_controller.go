@@ -3,8 +3,8 @@ package mock
 import (
 	"context"
 
-	"immortal-architecture-cqrs/backend/internal/domain/account"
-	"immortal-architecture-cqrs/backend/internal/port"
+	"immortal-architecture-notion/backend/internal/domain/account"
+	"immortal-architecture-notion/backend/internal/port"
 )
 
 // AccountInputStub is a lightweight stub for account use case input.

@@ -1,8 +1,8 @@
 package presenter
 
 import (
-	openapi "immortal-architecture-cqrs/backend/internal/adapter/http/generated/openapi"
-	"immortal-architecture-cqrs/backend/internal/domain/note"
+	openapi "immortal-architecture-notion/backend/internal/adapter/http/generated/openapi"
+	"immortal-architecture-notion/backend/internal/domain/note"
 )
 
 func toNoteResponse(n note.WithMeta) openapi.ModelsNoteResponse {

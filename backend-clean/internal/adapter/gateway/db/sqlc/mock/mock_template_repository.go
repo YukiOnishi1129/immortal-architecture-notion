@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"immortal-architecture-cqrs/backend/internal/adapter/gateway/db/sqlc/generated"
+	"immortal-architecture-notion/backend/internal/adapter/gateway/db/sqlc/generated"
 )
 
 // TemplateDBTX is a lightweight mock for sqlc.DBTX used in template repository tests.

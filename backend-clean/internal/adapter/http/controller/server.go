@@ -3,7 +3,7 @@ package controller
 import (
 	"github.com/labstack/echo/v4"
 
-	openapi "immortal-architecture-cqrs/backend/internal/adapter/http/generated/openapi"
+	openapi "immortal-architecture-notion/backend/internal/adapter/http/generated/openapi"
 )
 
 // Server implements the OpenAPI ServerInterface by delegating to domain-specific controllers.

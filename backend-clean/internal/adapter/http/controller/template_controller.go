@@ -7,11 +7,11 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	openapi "immortal-architecture-cqrs/backend/internal/adapter/http/generated/openapi"
-	"immortal-architecture-cqrs/backend/internal/adapter/http/presenter"
-	domainerr "immortal-architecture-cqrs/backend/internal/domain/errors"
-	"immortal-architecture-cqrs/backend/internal/domain/template"
-	"immortal-architecture-cqrs/backend/internal/port"
+	openapi "immortal-architecture-notion/backend/internal/adapter/http/generated/openapi"
+	"immortal-architecture-notion/backend/internal/adapter/http/presenter"
+	domainerr "immortal-architecture-notion/backend/internal/domain/errors"
+	"immortal-architecture-notion/backend/internal/domain/template"
+	"immortal-architecture-notion/backend/internal/port"
 )
 
 // TemplateController handles template HTTP endpoints.

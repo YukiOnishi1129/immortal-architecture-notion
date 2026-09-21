@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	domainerr "immortal-architecture-cqrs/backend/internal/domain/errors"
+	domainerr "immortal-architecture-notion/backend/internal/domain/errors"
 )
 
 func TestParseEmail(t *testing.T) {

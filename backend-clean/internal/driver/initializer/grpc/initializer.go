@@ -8,12 +8,12 @@ import (
 
 	"google.golang.org/grpc"
 
-	grpccontroller "immortal-architecture-cqrs/backend/internal/adapter/grpc/controller"
-	"immortal-architecture-cqrs/backend/internal/adapter/grpc/generated/accountpb"
-	"immortal-architecture-cqrs/backend/internal/driver/config"
-	driverdb "immortal-architecture-cqrs/backend/internal/driver/db"
-	"immortal-architecture-cqrs/backend/internal/driver/factory"
-	grpcfactory "immortal-architecture-cqrs/backend/internal/driver/factory/grpc"
+	grpccontroller "immortal-architecture-notion/backend/internal/adapter/grpc/controller"
+	"immortal-architecture-notion/backend/internal/adapter/grpc/generated/accountpb"
+	"immortal-architecture-notion/backend/internal/driver/config"
+	driverdb "immortal-architecture-notion/backend/internal/driver/db"
+	"immortal-architecture-notion/backend/internal/driver/factory"
+	grpcfactory "immortal-architecture-notion/backend/internal/driver/factory/grpc"
 )
 
 // BuildServer composes all dependencies and returns a gRPC server, config, and cleanup function.

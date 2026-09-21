@@ -78,9 +78,9 @@ proto:
 	@export PATH="$$HOME/.local/bin:$$(go env GOPATH)/bin:$$PATH"; \
 	$(PROTOC) \
 		--go_out=. \
-		--go_opt=module=immortal-architecture-cqrs/backend \
+		--go_opt=module=immortal-architecture-notion/backend \
 		--go-grpc_out=. \
-		--go-grpc_opt=module=immortal-architecture-cqrs/backend \
+		--go-grpc_opt=module=immortal-architecture-notion/backend \
 		-I .. \
 		$(PROTO_DIR)/account.proto
 

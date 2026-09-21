@@ -3,8 +3,8 @@ package mock
 import (
 	"context"
 
-	"immortal-architecture-cqrs/backend/internal/domain/template"
-	"immortal-architecture-cqrs/backend/internal/port"
+	"immortal-architecture-notion/backend/internal/domain/template"
+	"immortal-architecture-notion/backend/internal/port"
 )
 
 // TemplateInputStub is a lightweight stub for template use case input.

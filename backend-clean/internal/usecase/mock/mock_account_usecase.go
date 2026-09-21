@@ -6,7 +6,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	"immortal-architecture-cqrs/backend/internal/domain/account"
+	"immortal-architecture-notion/backend/internal/domain/account"
 )
 
 // MockAccountRepository is a mock of port.AccountRepository.

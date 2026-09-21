@@ -7,9 +7,9 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	openapi "immortal-architecture-cqrs/backend/internal/adapter/http/generated/openapi"
-	"immortal-architecture-cqrs/backend/internal/domain/account"
-	domainerr "immortal-architecture-cqrs/backend/internal/domain/errors"
+	openapi "immortal-architecture-notion/backend/internal/adapter/http/generated/openapi"
+	"immortal-architecture-notion/backend/internal/domain/account"
+	domainerr "immortal-architecture-notion/backend/internal/domain/errors"
 )
 
 func handleError(ctx echo.Context, err error) error {

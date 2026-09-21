@@ -1,1 +1,1 @@
-# immortal-architecture-cqrs
+# immortal-architecture-notion

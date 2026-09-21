@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	initializer "immortal-architecture-cqrs/backend/internal/driver/initializer/grpc"
+	initializer "immortal-architecture-notion/backend/internal/driver/initializer/grpc"
 )
 
 func main() {

@@ -4,10 +4,10 @@ import (
 	"context"
 	"strings"
 
-	domainerr "immortal-architecture-cqrs/backend/internal/domain/errors"
-	"immortal-architecture-cqrs/backend/internal/domain/note"
-	"immortal-architecture-cqrs/backend/internal/domain/service"
-	"immortal-architecture-cqrs/backend/internal/port"
+	domainerr "immortal-architecture-notion/backend/internal/domain/errors"
+	"immortal-architecture-notion/backend/internal/domain/note"
+	"immortal-architecture-notion/backend/internal/domain/service"
+	"immortal-architecture-notion/backend/internal/port"
 )
 
 // NoteCommandInteractor handles note command (write) use cases.

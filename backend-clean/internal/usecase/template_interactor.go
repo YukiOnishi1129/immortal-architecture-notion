@@ -4,9 +4,9 @@ package usecase
 import (
 	"context"
 
-	domainerr "immortal-architecture-cqrs/backend/internal/domain/errors"
-	"immortal-architecture-cqrs/backend/internal/domain/template"
-	"immortal-architecture-cqrs/backend/internal/port"
+	domainerr "immortal-architecture-notion/backend/internal/domain/errors"
+	"immortal-architecture-notion/backend/internal/domain/template"
+	"immortal-architecture-notion/backend/internal/port"
 )
 
 // TemplateInteractor handles template use cases.

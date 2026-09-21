@@ -7,7 +7,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	"immortal-architecture-cqrs/backend/internal/domain/template"
+	"immortal-architecture-notion/backend/internal/domain/template"
 )
 
 // MockTemplateRepository is a mock of port.TemplateRepository.

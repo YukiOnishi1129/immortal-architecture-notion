@@ -2,8 +2,8 @@
 package service
 
 import (
-	domainerr "immortal-architecture-cqrs/backend/internal/domain/errors"
-	"immortal-architecture-cqrs/backend/internal/domain/note"
+	domainerr "immortal-architecture-notion/backend/internal/domain/errors"
+	"immortal-architecture-notion/backend/internal/domain/note"
 )
 
 // CanPublish checks if the actor can publish the note.

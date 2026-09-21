@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"immortal-architecture-cqrs/backend/internal/domain/template"
+	"immortal-architecture-notion/backend/internal/domain/template"
 )
 
 func TestTemplatePresenter_TableDriven(t *testing.T) {

@@ -4,7 +4,7 @@ package port
 import (
 	"context"
 
-	"immortal-architecture-cqrs/backend/internal/domain/account"
+	"immortal-architecture-notion/backend/internal/domain/account"
 )
 
 // AccountInputPort defines account use case input methods.

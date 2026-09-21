@@ -3,8 +3,8 @@ package usecase
 import (
 	"context"
 
-	"immortal-architecture-cqrs/backend/internal/domain/note"
-	"immortal-architecture-cqrs/backend/internal/port"
+	"immortal-architecture-notion/backend/internal/domain/note"
+	"immortal-architecture-notion/backend/internal/port"
 )
 
 // NoteQueryInteractor handles note query (read) use cases.

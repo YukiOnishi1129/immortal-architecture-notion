@@ -7,11 +7,11 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	domainerr "immortal-architecture-cqrs/backend/internal/domain/errors"
-	"immortal-architecture-cqrs/backend/internal/domain/template"
-	"immortal-architecture-cqrs/backend/internal/port"
-	uc "immortal-architecture-cqrs/backend/internal/usecase"
-	mockusecase "immortal-architecture-cqrs/backend/internal/usecase/mock"
+	domainerr "immortal-architecture-notion/backend/internal/domain/errors"
+	"immortal-architecture-notion/backend/internal/domain/template"
+	"immortal-architecture-notion/backend/internal/port"
+	uc "immortal-architecture-notion/backend/internal/usecase"
+	mockusecase "immortal-architecture-notion/backend/internal/usecase/mock"
 )
 
 func TestTemplateInteractor_Create(t *testing.T) {

@@ -7,10 +7,10 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	"immortal-architecture-cqrs/backend/internal/domain/account"
-	domainerr "immortal-architecture-cqrs/backend/internal/domain/errors"
-	uc "immortal-architecture-cqrs/backend/internal/usecase"
-	mockusecase "immortal-architecture-cqrs/backend/internal/usecase/mock"
+	"immortal-architecture-notion/backend/internal/domain/account"
+	domainerr "immortal-architecture-notion/backend/internal/domain/errors"
+	uc "immortal-architecture-notion/backend/internal/usecase"
+	mockusecase "immortal-architecture-notion/backend/internal/usecase/mock"
 )
 
 func TestAccountInteractor_CreateOrGet(t *testing.T) {

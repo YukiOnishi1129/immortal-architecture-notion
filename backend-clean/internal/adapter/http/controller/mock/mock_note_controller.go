@@ -3,8 +3,8 @@ package mock
 import (
 	"context"
 
-	"immortal-architecture-cqrs/backend/internal/domain/note"
-	"immortal-architecture-cqrs/backend/internal/port"
+	"immortal-architecture-notion/backend/internal/domain/note"
+	"immortal-architecture-notion/backend/internal/port"
 )
 
 // NoteCommandInputStub is a stub for the CQRS command input port.

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"immortal-architecture-cqrs/backend/internal/domain/account"
+	"immortal-architecture-notion/backend/internal/domain/account"
 )
 
 func TestAccountPresenter_PresentAccount(t *testing.T) {

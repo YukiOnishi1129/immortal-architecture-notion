@@ -3,7 +3,7 @@ package port
 import (
 	"context"
 
-	"immortal-architecture-cqrs/backend/internal/domain/note"
+	"immortal-architecture-notion/backend/internal/domain/note"
 )
 
 // NoteCommandInputPort defines command (write) use case inputs for notes.

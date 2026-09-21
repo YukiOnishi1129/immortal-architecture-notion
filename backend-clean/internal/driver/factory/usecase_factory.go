@@ -2,8 +2,8 @@
 package factory
 
 import (
-	"immortal-architecture-cqrs/backend/internal/port"
-	"immortal-architecture-cqrs/backend/internal/usecase"
+	"immortal-architecture-notion/backend/internal/port"
+	"immortal-architecture-notion/backend/internal/usecase"
 )
 
 // NewAccountInputFactory returns a factory for AccountInteractor.

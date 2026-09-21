@@ -1032,9 +1032,9 @@ internal/adapter/gateway/db/
    import (
        "github.com/jackc/pgx/v5/pgxpool"
 
-       "immortal-architecture-cqrs/backend/internal/adapter/gateway/db/sqlc"
-       // "immortal-architecture-cqrs/backend/internal/adapter/gateway/db/gorm"  ← コメント外す
-       "immortal-architecture-cqrs/backend/internal/port"
+       "immortal-architecture-notion/backend/internal/adapter/gateway/db/sqlc"
+       // "immortal-architecture-notion/backend/internal/adapter/gateway/db/gorm"  ← コメント外す
+       "immortal-architecture-notion/backend/internal/port"
    )
    ```
 

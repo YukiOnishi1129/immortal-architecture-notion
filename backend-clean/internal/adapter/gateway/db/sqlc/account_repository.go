@@ -9,10 +9,10 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"immortal-architecture-cqrs/backend/internal/adapter/gateway/db/sqlc/generated"
-	"immortal-architecture-cqrs/backend/internal/domain/account"
-	domainerr "immortal-architecture-cqrs/backend/internal/domain/errors"
-	"immortal-architecture-cqrs/backend/internal/port"
+	"immortal-architecture-notion/backend/internal/adapter/gateway/db/sqlc/generated"
+	"immortal-architecture-notion/backend/internal/domain/account"
+	domainerr "immortal-architecture-notion/backend/internal/domain/errors"
+	"immortal-architecture-notion/backend/internal/port"
 )
 
 // AccountRepository implements account persistence.

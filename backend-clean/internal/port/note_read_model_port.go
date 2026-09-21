@@ -3,7 +3,7 @@ package port
 import (
 	"context"
 
-	"immortal-architecture-cqrs/backend/internal/domain/note"
+	"immortal-architecture-notion/backend/internal/domain/note"
 )
 
 // NoteQueryInputPort defines query (read) use case inputs for notes.

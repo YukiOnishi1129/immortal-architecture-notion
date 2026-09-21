@@ -4,8 +4,8 @@ package usecase
 import (
 	"context"
 
-	"immortal-architecture-cqrs/backend/internal/domain/account"
-	"immortal-architecture-cqrs/backend/internal/port"
+	"immortal-architecture-notion/backend/internal/domain/account"
+	"immortal-architecture-notion/backend/internal/port"
 )
 
 // AccountInteractor handles account use cases.

@@ -1,7 +1,7 @@
 // Package http provides factory functions for HTTP adapters.
 package http
 
-import httppresenter "immortal-architecture-cqrs/backend/internal/adapter/http/presenter"
+import httppresenter "immortal-architecture-notion/backend/internal/adapter/http/presenter"
 
 // NewAccountOutputFactory returns a factory for HTTP AccountPresenter.
 func NewAccountOutputFactory() func() *httppresenter.AccountPresenter {

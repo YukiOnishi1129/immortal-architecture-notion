@@ -4,7 +4,7 @@ package port
 import (
 	"context"
 
-	"immortal-architecture-cqrs/backend/internal/domain/note"
+	"immortal-architecture-notion/backend/internal/domain/note"
 )
 
 // NoteRepository abstracts note persistence.

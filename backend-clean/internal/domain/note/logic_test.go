@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	domainerr "immortal-architecture-cqrs/backend/internal/domain/errors"
-	"immortal-architecture-cqrs/backend/internal/domain/template"
+	domainerr "immortal-architecture-notion/backend/internal/domain/errors"
+	"immortal-architecture-notion/backend/internal/domain/template"
 )
 
 func TestValidateNoteOwnership(t *testing.T) {

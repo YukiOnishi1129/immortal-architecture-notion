@@ -7,9 +7,9 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"immortal-architecture-cqrs/backend/internal/adapter/grpc/generated/accountpb"
-	"immortal-architecture-cqrs/backend/internal/domain/account"
-	"immortal-architecture-cqrs/backend/internal/port"
+	"immortal-architecture-notion/backend/internal/adapter/grpc/generated/accountpb"
+	"immortal-architecture-notion/backend/internal/domain/account"
+	"immortal-architecture-notion/backend/internal/port"
 )
 
 // AccountPresenter implements port.AccountOutputPort for gRPC.

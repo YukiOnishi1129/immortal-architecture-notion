@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"immortal-architecture-cqrs/backend/internal/adapter/gateway/db/sqlc/generated"
+	"immortal-architecture-notion/backend/internal/adapter/gateway/db/sqlc/generated"
 )
 
 // AccountDBTX is a lightweight mock for sqlc.DBTX to test account repository.

@@ -3,7 +3,7 @@ package template
 import (
 	"strings"
 
-	domainerr "immortal-architecture-cqrs/backend/internal/domain/errors"
+	domainerr "immortal-architecture-notion/backend/internal/domain/errors"
 )
 
 // NormalizeAndValidate sets missing order and validates fields.

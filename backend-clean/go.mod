@@ -1,4 +1,4 @@
-module immortal-architecture-cqrs/backend
+module immortal-architecture-notion/backend
 
 go 1.25
 

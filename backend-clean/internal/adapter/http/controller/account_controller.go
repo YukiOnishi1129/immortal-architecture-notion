@@ -6,10 +6,10 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	openapi "immortal-architecture-cqrs/backend/internal/adapter/http/generated/openapi"
-	"immortal-architecture-cqrs/backend/internal/adapter/http/presenter"
-	"immortal-architecture-cqrs/backend/internal/domain/account"
-	"immortal-architecture-cqrs/backend/internal/port"
+	openapi "immortal-architecture-notion/backend/internal/adapter/http/generated/openapi"
+	"immortal-architecture-notion/backend/internal/adapter/http/presenter"
+	"immortal-architecture-notion/backend/internal/domain/account"
+	"immortal-architecture-notion/backend/internal/port"
 )
 
 // AccountController handles account HTTP endpoints.

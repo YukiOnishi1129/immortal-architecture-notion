@@ -3,7 +3,7 @@ package note
 import (
 	"testing"
 
-	domainerr "immortal-architecture-cqrs/backend/internal/domain/errors"
+	domainerr "immortal-architecture-notion/backend/internal/domain/errors"
 )
 
 func TestNote_ReplaceSections(t *testing.T) {

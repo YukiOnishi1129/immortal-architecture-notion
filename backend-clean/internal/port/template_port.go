@@ -4,7 +4,7 @@ package port
 import (
 	"context"
 
-	"immortal-architecture-cqrs/backend/internal/domain/template"
+	"immortal-architecture-notion/backend/internal/domain/template"
 )
 
 // TemplateInputPort defines template use case inputs.

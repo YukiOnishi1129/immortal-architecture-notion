@@ -7,12 +7,12 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
-	httpcontroller "immortal-architecture-cqrs/backend/internal/adapter/http/controller"
-	openapi "immortal-architecture-cqrs/backend/internal/adapter/http/generated/openapi"
-	"immortal-architecture-cqrs/backend/internal/driver/config"
-	driverdb "immortal-architecture-cqrs/backend/internal/driver/db"
-	"immortal-architecture-cqrs/backend/internal/driver/factory"
-	httpfactory "immortal-architecture-cqrs/backend/internal/driver/factory/http"
+	httpcontroller "immortal-architecture-notion/backend/internal/adapter/http/controller"
+	openapi "immortal-architecture-notion/backend/internal/adapter/http/generated/openapi"
+	"immortal-architecture-notion/backend/internal/driver/config"
+	driverdb "immortal-architecture-notion/backend/internal/driver/db"
+	"immortal-architecture-notion/backend/internal/driver/factory"
+	httpfactory "immortal-architecture-notion/backend/internal/driver/factory/http"
 )
 
 // BuildServer composes all dependencies and returns an Echo server, config, and cleanup function.

@@ -11,7 +11,7 @@
 このプロジェクトには、**2つのバックエンド**があります。どちらも同じAPIを提供しますが、中身は全然違います。
 
 ```
-immortal-architecture-cqrs/
+immortal-architecture-notion/
 ├── backend-bad/    ← ❌ グチャグチャの家（わざと悪く建てた）
 └── backend-clean/  ← ✅ きれいに整理された家（このプロジェクト）
 ```

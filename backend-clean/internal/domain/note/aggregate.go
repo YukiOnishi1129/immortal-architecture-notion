@@ -1,7 +1,7 @@
 // Package note holds note domain models.
 package note
 
-import domainerr "immortal-architecture-cqrs/backend/internal/domain/errors"
+import domainerr "immortal-architecture-notion/backend/internal/domain/errors"
 
 // Aggregate helper methods to enforce child through parent.
 
