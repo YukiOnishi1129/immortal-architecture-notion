@@ -6,7 +6,7 @@ ENV CGO_ENABLED=1 \
     GO111MODULE=on
 
 # Install Air for hot reload
-RUN go install github.com/air-verse/air@latest
+RUN go install github.com/air-verse/air@v1.67.0
 
 # Pre-fetch modules for faster startup
 COPY backend-clean/go.mod backend-clean/go.sum ./
