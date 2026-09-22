@@ -394,6 +394,82 @@ func TestUpdate_RejectedSectionsNeverReachNotion(t *testing.T) {
 	}
 }
 
+// QA-23: notes published before the integration existed have no page, and no
+// status change will reach them. A manual sync creates the page in place.
+func TestSyncToNotion_PublishedButUnlinked(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := newNotionDeps(ctrl)
+	current := syncNoteWithMeta(note.StatusPublish, nil)
+
+	d.notes.EXPECT().Get(gomock.Any(), "note-1").Return(current, nil)
+	d.templates.EXPECT().Get(gomock.Any(), "tpl-1").Return(templateWithParent(testParentPageID), nil)
+	d.notion.EXPECT().
+		CreatePage(gomock.Any(), testParentPageID, "Title", []port.NotionSection{{Label: "Field", Content: "body"}}).
+		Return(&port.NotionPage{PageID: testNotionPageID, URL: testNotionURL}, nil)
+
+	d.expectTx()
+	d.notes.EXPECT().
+		SaveNotionPage(gomock.Any(), "note-1", strptrMatcher(testNotionPageID), strptrMatcher(testNotionURL), gomock.Any()).
+		Return(nil)
+	d.notes.EXPECT().Get(gomock.Any(), "note-1").Return(current, nil).Times(2)
+	d.readModels.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(nil)
+	d.output.EXPECT().PresentNote(gomock.Any(), current).Return(nil)
+
+	if err := d.interactor().SyncToNotion(context.Background(), "note-1", "owner-1"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+// The manual sync only applies to published notes that have no page yet.
+func TestSyncToNotion_Rejected(t *testing.T) {
+	tests := []struct {
+		name    string
+		current *note.WithMeta
+	}{
+		{
+			name:    "[Fail] a draft has nothing to show yet",
+			current: syncNoteWithMeta(note.StatusDraft, nil),
+		},
+		{
+			name:    "[Fail] already linked, edits go through Update",
+			current: syncNoteWithMeta(note.StatusPublish, strptr(testNotionPageID)),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			d := newNotionDeps(ctrl)
+			d.notes.EXPECT().Get(gomock.Any(), "note-1").Return(tt.current, nil)
+			// No notion call and no transaction: gomock fails on either.
+
+			err := d.interactor().SyncToNotion(context.Background(), "note-1", "owner-1")
+			if !errors.Is(err, domainerr.ErrNotionSyncNotNeeded) {
+				t.Fatalf("want ErrNotionSyncNotNeeded, got %v", err)
+			}
+		})
+	}
+}
+
+// With the integration switched off there is nothing to sync to.
+func TestSyncToNotion_NotionDisabled(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := newNotionDeps(ctrl)
+	current := syncNoteWithMeta(note.StatusPublish, nil)
+	d.notes.EXPECT().Get(gomock.Any(), "note-1").Return(current, nil)
+
+	interactor := uc.NewNoteCommandInteractor(d.notes, d.readModels, d.templates, d.tx, d.output, nil)
+	if err := interactor.SyncToNotion(context.Background(), "note-1", "owner-1"); !errors.Is(err, domainerr.ErrNotionSyncNotNeeded) {
+		t.Fatalf("want ErrNotionSyncNotNeeded, got %v", err)
+	}
+}
+
 // QA-12: deleting a note leaves the Notion page alone.
 func TestDelete_LeavesNotionPage(t *testing.T) {
 	ctrl := gomock.NewController(t)

@@ -54,6 +54,8 @@ export const NoteResponseSchema = z.object({
   sections: z.array(SectionResponseSchema),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
+  // 連携済みNotionページのURL。未連携なら null。
+  notionPageUrl: z.string().nullable().optional(),
 });
 
 export const CreateNoteRequestSchema = z.object({
@@ -95,6 +97,10 @@ export const UnpublishNoteRequestSchema = z.object({
   noteId: z.uuid(),
 });
 
+export const SyncNoteToNotionRequestSchema = z.object({
+  noteId: z.uuid(),
+});
+
 // Type exports
 export type GetNoteByIdRequest = z.infer<typeof GetNoteByIdRequestSchema>;
 export type ListNoteRequest = z.infer<typeof ListNoteRequestSchema>;
@@ -109,3 +115,6 @@ export type UpdateNoteByIdRequest = z.infer<typeof UpdateNoteByIdRequestSchema>;
 export type DeleteNoteRequest = z.infer<typeof DeleteNoteRequestSchema>;
 export type PublishNoteRequest = z.infer<typeof PublishNoteRequestSchema>;
 export type UnpublishNoteRequest = z.infer<typeof UnpublishNoteRequestSchema>;
+export type SyncNoteToNotionRequest = z.infer<
+  typeof SyncNoteToNotionRequestSchema
+>;

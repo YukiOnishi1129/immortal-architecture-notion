@@ -74,6 +74,11 @@ export interface NotesPublishNoteRequest {
     ownerId: string;
 }
 
+export interface NotesSyncNoteToNotionRequest {
+    noteId: string;
+    ownerId: string;
+}
+
 export interface NotesUnpublishNoteRequest {
     noteId: string;
     ownerId: string;
@@ -314,6 +319,56 @@ export class NotesApi extends runtime.BaseAPI {
      */
     async notesPublishNote(requestParameters: NotesPublishNoteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ModelsNoteResponse> {
         const response = await this.notesPublishNoteRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Notion連携（公開済みノートの手動連携）
+     * Sync note to Notion
+     */
+    async notesSyncNoteToNotionRaw(requestParameters: NotesSyncNoteToNotionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ModelsNoteResponse>> {
+        if (requestParameters['noteId'] == null) {
+            throw new runtime.RequiredError(
+                'noteId',
+                'Required parameter "noteId" was null or undefined when calling notesSyncNoteToNotion().'
+            );
+        }
+
+        if (requestParameters['ownerId'] == null) {
+            throw new runtime.RequiredError(
+                'ownerId',
+                'Required parameter "ownerId" was null or undefined when calling notesSyncNoteToNotion().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters['ownerId'] != null) {
+            queryParameters['ownerId'] = requestParameters['ownerId'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/api/notes/{noteId}/notion-sync`;
+        urlPath = urlPath.replace(`{${"noteId"}}`, encodeURIComponent(String(requestParameters['noteId'])));
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ModelsNoteResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Notion連携（公開済みノートの手動連携）
+     * Sync note to Notion
+     */
+    async notesSyncNoteToNotion(requestParameters: NotesSyncNoteToNotionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ModelsNoteResponse> {
+        const response = await this.notesSyncNoteToNotionRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

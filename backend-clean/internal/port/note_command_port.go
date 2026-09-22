@@ -12,6 +12,11 @@ type NoteCommandInputPort interface {
 	Update(ctx context.Context, input NoteUpdateInput) error
 	ChangeStatus(ctx context.Context, input NoteStatusChangeInput) error
 	Delete(ctx context.Context, id, ownerID string) error
+
+	// SyncToNotion links an already published note to Notion without changing
+	// its status. Used to rescue notes published before the integration
+	// existed, which no status change would otherwise reach.
+	SyncToNotion(ctx context.Context, id, ownerID string) error
 }
 
 // NoteCommandOutputPort defines command (write) presenters for notes.

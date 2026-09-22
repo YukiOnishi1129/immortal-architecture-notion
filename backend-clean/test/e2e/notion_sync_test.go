@@ -334,6 +334,79 @@ func TestE2E_DeleteKeepsNotionPage(t *testing.T) {
 	}
 }
 
+func (a *app) syncToNotion(noteID, ownerID string) response {
+	a.t.Helper()
+	return a.do(http.MethodPost, "/api/notes/"+noteID+"/notion-sync?ownerId="+ownerID, nil)
+}
+
+// QA-23 notes published before the integration existed have no Notion page,
+// and no status change will reach them. The manual sync creates one without
+// taking the note out of the published list.
+func TestE2E_ManualSyncLinksAlreadyPublishedNote(t *testing.T) {
+	// Publish with the integration off, which is the state those notes are in.
+	a := newAppWithoutNotion(t)
+	owner := seedAccount(t)
+	tpl := a.createTemplate(owner, linkedTemplate)
+	n := a.createNote(owner, tpl, draftNote)
+	a.publish(n.ID, owner).expect(t, http.StatusOK)
+
+	published := a.getNote(n.ID, owner)
+	if published.Status != "Publish" || published.NotionPageURL != nil {
+		t.Fatalf("setup failed: status=%q url=%v", published.Status, published.NotionPageURL)
+	}
+
+	// The integration is now configured.
+	a.withNotion()
+	a.syncToNotion(n.ID, owner).expect(t, http.StatusOK)
+
+	got := a.getNote(n.ID, owner)
+	if got.Status != "Publish" {
+		t.Fatalf("status = %q, want it to stay Publish", got.Status)
+	}
+	if got.NotionPageURL == nil {
+		t.Fatalf("notionPageUrl is nil, want the note linked")
+	}
+	if count := a.notion.pageCount(); count != 1 {
+		t.Fatalf("notion pages = %d, want 1", count)
+	}
+	page := a.notion.page(pageIDFromURL(*got.NotionPageURL))
+	if page.title != draftNote.Title {
+		t.Fatalf("notion title = %q, want %q", page.title, draftNote.Title)
+	}
+}
+
+// The manual sync is only for published notes that have no page yet.
+func TestE2E_ManualSyncRejected(t *testing.T) {
+	tests := []struct {
+		name         string
+		publishFirst bool
+		syncTwice    bool
+	}{
+		{name: "[Fail] a draft has nothing to show yet"},
+		{name: "[Fail] already linked", publishFirst: true, syncTwice: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := newApp(t)
+			owner := seedAccount(t)
+			tpl := a.createTemplate(owner, linkedTemplate)
+			n := a.createNote(owner, tpl, draftNote)
+			if tt.publishFirst {
+				a.publish(n.ID, owner).expect(t, http.StatusOK)
+			}
+
+			res := a.syncToNotion(n.ID, owner)
+			if res.code != http.StatusBadRequest {
+				t.Fatalf("status = %d, want 400: %s", res.code, res.body)
+			}
+			if tt.syncTwice && a.notion.pageCount() != 1 {
+				t.Fatalf("notion pages = %d, want the original one only", a.notion.pageCount())
+			}
+		})
+	}
+}
+
 // pageIDFromURL extracts the id from a page URL the fake returns.
 func pageIDFromURL(url string) string {
 	const prefix = "https://www.notion.so/"

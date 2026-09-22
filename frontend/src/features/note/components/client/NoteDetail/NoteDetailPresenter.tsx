@@ -2,10 +2,19 @@
 
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Edit, Eye, EyeOff, Loader2, Trash2, User } from "lucide-react";
+import {
+  Edit,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  Loader2,
+  Trash2,
+  User,
+} from "lucide-react";
 import type { Route } from "next";
 import type { Note } from "@/features/note/types";
 import { ConfirmDialog } from "@/shared/components/dialog";
+import { NotionSetupGuide } from "@/shared/components/notion";
 import {
   Avatar,
   AvatarFallback,
@@ -24,6 +33,10 @@ import { Skeleton } from "@/shared/components/ui/skeleton";
 
 type NoteDetailPresenterProps = {
   note?: Note | null;
+  /** テンプレートにNotionの親ページが設定されているか。未設定なら公開できない。 */
+  hasNotionParentPage?: boolean;
+  isSyncingToNotion?: boolean;
+  onSyncToNotion?: () => void;
   isLoading: boolean;
   isDeleting: boolean;
   isTogglingPublish: boolean;
@@ -42,6 +55,9 @@ type NoteDetailPresenterProps = {
 
 export function NoteDetailPresenter({
   note,
+  hasNotionParentPage = false,
+  isSyncingToNotion = false,
+  onSyncToNotion,
   isLoading,
   isDeleting,
   isTogglingPublish,
@@ -84,6 +100,15 @@ export function NoteDetailPresenter({
     );
   }
 
+  // 公開はNotion連携を伴うので、親ページが無いと実行できない。
+  // 下書きに戻す操作は連携が不要なので止めない。
+  const cannotPublish = note.status !== "Publish" && !hasNotionParentPage;
+
+  // この機能より前に公開されたノートはNotionページを持たない。公開操作が
+  // 連携のきっかけなので、状態を変えずに連携だけ実行できるようにする。
+  const needsManualSync =
+    note.status === "Publish" && !note.notionPageUrl && hasNotionParentPage;
+
   const statusBadgeVariant =
     note.status === "Publish" ? "default" : "secondary";
   const statusText = note.status === "Publish" ? "公開" : "下書き";
@@ -116,6 +141,18 @@ export function NoteDetailPresenter({
                 <span>テンプレート: {note.templateName}</span>
                 <Badge variant={statusBadgeVariant}>{statusText}</Badge>
               </div>
+
+              {note.notionPageUrl && (
+                <a
+                  href={note.notionPageUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                >
+                  Notionで開く
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              )}
             </div>
             {isOwner && (
               <div className="flex gap-2">
@@ -123,7 +160,12 @@ export function NoteDetailPresenter({
                   onClick={onTogglePublish}
                   size="sm"
                   variant={note.status === "Publish" ? "secondary" : "default"}
-                  disabled={isTogglingPublish}
+                  disabled={isTogglingPublish || cannotPublish}
+                  title={
+                    cannotPublish
+                      ? "テンプレートにNotionのページURLが設定されていません"
+                      : undefined
+                  }
                 >
                   {isTogglingPublish ? (
                     <>
@@ -158,6 +200,39 @@ export function NoteDetailPresenter({
               </div>
             )}
           </div>
+
+          {isOwner && needsManualSync && (
+            <div className="mt-4 flex items-center justify-between gap-2 rounded-md border bg-muted/40 px-3 py-2">
+              <p className="text-sm text-muted-foreground">
+                このノートはまだNotionに連携されていません。
+              </p>
+              <Button
+                onClick={onSyncToNotion}
+                size="sm"
+                variant="outline"
+                disabled={isSyncingToNotion}
+              >
+                {isSyncingToNotion ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    連携中...
+                  </>
+                ) : (
+                  "連携する"
+                )}
+              </Button>
+            </div>
+          )}
+
+          {isOwner && cannotPublish && (
+            <div className="mt-4 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
+              <p className="text-sm text-amber-900">
+                このノートのテンプレートに、NotionのページURLが設定されていません。
+                設定するまで公開できません。
+              </p>
+              <NotionSetupGuide className="-my-1 shrink-0 text-amber-900 hover:bg-amber-100" />
+            </div>
+          )}
         </CardHeader>
         <CardContent className="space-y-6">
           {note.sections.map((section) => (

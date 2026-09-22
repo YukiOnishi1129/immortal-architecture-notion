@@ -34,6 +34,13 @@ func (s *NoteCommandInputStub) ChangeStatus(ctx context.Context, input port.Note
 	return s.Err
 }
 
+func (s *NoteCommandInputStub) SyncToNotion(ctx context.Context, id, ownerID string) error {
+	if s.Output != nil && s.Err == nil {
+		_ = s.Output.PresentNote(ctx, &note.WithMeta{Note: note.Note{ID: id, OwnerID: ownerID, Status: note.StatusPublish}})
+	}
+	return s.Err
+}
+
 func (s *NoteCommandInputStub) Delete(ctx context.Context, id, ownerID string) error {
 	if s.Output != nil && s.Err == nil {
 		_ = s.Output.PresentNoteDeleted(ctx)

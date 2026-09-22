@@ -9,6 +9,7 @@ All URIs are relative to *https://api.mini-notion.com*
 | [**notesGetNoteById**](NotesApi.md#notesgetnotebyid) | **GET** /api/notes/{noteId} | Get note by ID |
 | [**notesListNotes**](NotesApi.md#noteslistnotes) | **GET** /api/notes | Get notes list |
 | [**notesPublishNote**](NotesApi.md#notespublishnote) | **POST** /api/notes/{noteId}/publish | Publish note |
+| [**notesSyncNoteToNotion**](NotesApi.md#notessyncnotetonotion) | **POST** /api/notes/{noteId}/notion-sync | Sync note to Notion |
 | [**notesUnpublishNote**](NotesApi.md#notesunpublishnote) | **POST** /api/notes/{noteId}/unpublish | Unpublish note |
 | [**notesUpdateNote**](NotesApi.md#notesupdatenote) | **PUT** /api/notes/{noteId} | Update note |
 
@@ -345,6 +346,77 @@ example().catch(console.error);
 |------------- | ------------- | ------------- | -------------|
 | **noteId** | `string` |  | [Defaults to `undefined`] |
 | **ownerId** | `string` | 所有者ID（公開権限チェック用） | [Defaults to `undefined`] |
+
+### Return type
+
+[**ModelsNoteResponse**](ModelsNoteResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | The request has succeeded. |  -  |
+| **0** | An unexpected error response. |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
+
+## notesSyncNoteToNotion
+
+> ModelsNoteResponse notesSyncNoteToNotion(noteId, ownerId)
+
+Sync note to Notion
+
+Notion連携（公開済みノートの手動連携）
+
+### Example
+
+```ts
+import {
+  Configuration,
+  NotesApi,
+} from '';
+import type { NotesSyncNoteToNotionRequest } from '';
+
+async function example() {
+  console.log("🚀 Testing  SDK...");
+  const api = new NotesApi();
+
+  const body = {
+    // string
+    noteId: noteId_example,
+    // string | 所有者ID（操作権限チェック用）
+    ownerId: ownerId_example,
+  } satisfies NotesSyncNoteToNotionRequest;
+
+  try {
+    const data = await api.notesSyncNoteToNotion(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Run the test
+example().catch(console.error);
+```
+
+### Parameters
+
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **noteId** | `string` |  | [Defaults to `undefined`] |
+| **ownerId** | `string` | 所有者ID（操作権限チェック用） | [Defaults to `undefined`] |
 
 ### Return type
 

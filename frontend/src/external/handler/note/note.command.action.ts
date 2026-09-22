@@ -5,6 +5,7 @@ import type {
   CreateNoteRequest,
   DeleteNoteRequest,
   PublishNoteRequest,
+  SyncNoteToNotionRequest,
   UnpublishNoteRequest,
   UpdateNoteByIdRequest,
 } from "../../dto/note.dto";
@@ -12,6 +13,7 @@ import {
   createNoteCommand,
   deleteNoteCommand,
   publishNoteCommand,
+  syncNoteToNotionCommand,
   unpublishNoteCommand,
   updateNoteCommand,
 } from "./note.command.server";
@@ -32,6 +34,14 @@ export async function unpublishNoteCommandAction(
   request: UnpublishNoteRequest,
 ) {
   return withAuth(({ accountId }) => unpublishNoteCommand(request, accountId));
+}
+
+export async function syncNoteToNotionCommandAction(
+  request: SyncNoteToNotionRequest,
+) {
+  return withAuth(({ accountId }) =>
+    syncNoteToNotionCommand(request, accountId),
+  );
 }
 
 export async function deleteNoteCommandAction(request: DeleteNoteRequest) {

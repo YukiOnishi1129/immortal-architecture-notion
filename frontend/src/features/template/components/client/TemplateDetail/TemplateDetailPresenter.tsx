@@ -13,6 +13,7 @@ import type { Route } from "next";
 import Link from "next/link";
 import type { Template } from "@/features/template/types";
 import { ConfirmDialog } from "@/shared/components/dialog";
+import { NotionSetupGuide } from "@/shared/components/notion";
 import {
   Avatar,
   AvatarFallback,
@@ -155,9 +156,12 @@ export function TemplateDetailPresenter({
             </div>
 
             <div>
-              <h3 className="text-sm text-muted-foreground mb-2">
-                Notionのページ
-              </h3>
+              <div className="mb-2 flex items-center gap-1">
+                <h3 className="text-sm text-muted-foreground">
+                  Notionのページ
+                </h3>
+                <NotionSetupGuide className="-my-1 h-6 px-1 text-muted-foreground" />
+              </div>
               {template.notionParentPageUrl ? (
                 <a
                   href={template.notionParentPageUrl}

@@ -173,6 +173,19 @@ func (c *NoteController) Publish(ctx echo.Context, noteID string, params openapi
 	return ctx.JSON(http.StatusOK, p.Note())
 }
 
+// SyncToNotion handles POST /notes/:id/notion-sync (Command side).
+func (c *NoteController) SyncToNotion(ctx echo.Context, noteID string, params openapi.NotesSyncNoteToNotionParams) error {
+	ownerID := strings.TrimSpace(params.OwnerId)
+	if ownerID == "" {
+		return handleError(ctx, domainerr.ErrOwnerRequired)
+	}
+	input, p := c.newCommandIO()
+	if err := input.SyncToNotion(ctx.Request().Context(), noteID, ownerID); err != nil {
+		return handleError(ctx, err)
+	}
+	return ctx.JSON(http.StatusOK, p.Note())
+}
+
 // Unpublish handles POST /notes/:id/unpublish (Command side).
 func (c *NoteController) Unpublish(ctx echo.Context, noteID string, params openapi.NotesUnpublishNoteParams) error {
 	ownerID := strings.TrimSpace(params.OwnerId)

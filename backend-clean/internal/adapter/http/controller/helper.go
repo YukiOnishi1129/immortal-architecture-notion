@@ -46,6 +46,7 @@ func isBadRequest(err error) bool {
 		domainerr.ErrTemplateInUse,
 		domainerr.ErrTemplateNameRequired,
 		domainerr.ErrNotionParentNotSet,
+		domainerr.ErrNotionSyncNotNeeded,
 		domainerr.ErrInvalidNotionParentURL,
 	} {
 		if errors.Is(err, target) {

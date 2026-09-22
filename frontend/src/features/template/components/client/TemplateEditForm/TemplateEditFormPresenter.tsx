@@ -5,6 +5,7 @@ import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
 import { GripVertical, Plus, Trash2 } from "lucide-react";
 import type { Route } from "next";
 import type { FieldArrayWithId, UseFormReturn } from "react-hook-form";
+import { NotionSetupGuide } from "@/shared/components/notion";
 import { Breadcrumb } from "@/shared/components/ui/breadcrumb";
 import { Button } from "@/shared/components/ui/button";
 import { Card } from "@/shared/components/ui/card";
@@ -94,11 +95,12 @@ export function TemplateEditFormPresenter({
               name="notionParentPageUrl"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
+                  <FormLabel className="flex items-center gap-1">
                     NotionのページURL
-                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    <span className="text-xs font-normal text-muted-foreground">
                       任意
                     </span>
+                    <NotionSetupGuide className="-my-1 h-6 px-1 text-muted-foreground" />
                   </FormLabel>
                   <FormControl>
                     <Input
