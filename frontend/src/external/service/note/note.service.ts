@@ -9,7 +9,11 @@ import {
   type UpdateNoteRequest,
 } from "@/external/dto/note.dto";
 import type { NoteFilters } from "@/features/note/types";
-import { isNotFoundError } from "../http-error";
+import {
+  isNotFoundError,
+  isResponseError,
+  readErrorMessage,
+} from "../http-error";
 
 function toNoteResponse(model: ModelsNoteResponse): NoteResponse {
   return NoteResponseSchema.parse({
@@ -114,12 +118,18 @@ export class NoteService {
   }
 
   async publishNote(noteId: string, ownerId: string): Promise<NoteResponse> {
-    const note = await this.api.notesPublishNote({ noteId, ownerId });
+    const note = await withServerReason(
+      () => this.api.notesPublishNote({ noteId, ownerId }),
+      "ノートの公開に失敗しました",
+    );
     return toNoteResponse(note);
   }
 
   async unpublishNote(noteId: string, ownerId: string): Promise<NoteResponse> {
-    const note = await this.api.notesUnpublishNote({ noteId, ownerId });
+    const note = await withServerReason(
+      () => this.api.notesUnpublishNote({ noteId, ownerId }),
+      "ノートの非公開に失敗しました",
+    );
     return toNoteResponse(note);
   }
 
@@ -128,7 +138,10 @@ export class NoteService {
     noteId: string,
     ownerId: string,
   ): Promise<NoteResponse> {
-    const note = await this.api.notesSyncNoteToNotion({ noteId, ownerId });
+    const note = await withServerReason(
+      () => this.api.notesSyncNoteToNotion({ noteId, ownerId }),
+      "Notionへの連携に失敗しました",
+    );
     return toNoteResponse(note);
   }
 
@@ -138,3 +151,22 @@ export class NoteService {
 }
 
 export const noteService = new NoteService(notesApiClient);
+
+/**
+ * 生成クライアントの ResponseError は message が固定文字列で、サーバーが返した
+ * 理由はレスポンスボディにある。そのまま投げるとUIに理由が出せないので、
+ * ここで読み出して普通の Error に詰め替える。
+ */
+async function withServerReason<T>(
+  call: () => Promise<T>,
+  fallback: string,
+): Promise<T> {
+  try {
+    return await call();
+  } catch (error) {
+    if (isResponseError(error)) {
+      throw new Error((await readErrorMessage(error)) ?? fallback);
+    }
+    throw error;
+  }
+}
