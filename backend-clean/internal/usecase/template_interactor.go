@@ -105,9 +105,14 @@ func (u *TemplateInteractor) Update(ctx context.Context, input port.TemplateUpda
 			return err
 		}
 	}
-	parentPageID, err := resolveParentPageID(input.NotionParentPageURL)
-	if err != nil {
-		return err
+	// An omitted field means "no change", so the stored id is kept.
+	// Only an explicitly empty string clears the link.
+	parentPageID := current.Template.NotionParentPageID
+	if input.NotionParentPageURL != nil {
+		parentPageID, err = resolveParentPageID(*input.NotionParentPageURL)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = u.tx.WithinTransaction(ctx, func(txCtx context.Context) error {

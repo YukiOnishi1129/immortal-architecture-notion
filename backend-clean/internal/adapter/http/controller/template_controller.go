@@ -112,7 +112,7 @@ func (c *TemplateController) Update(ctx echo.Context, templateID string, params 
 		Name:                body.Name,
 		Fields:              fields,
 		OwnerID:             ownerID,
-		NotionParentPageURL: valueOrEmpty(body.NotionParentPageUrl),
+		NotionParentPageURL: body.NotionParentPageUrl,
 	})
 	if err != nil {
 		return handleError(ctx, err)

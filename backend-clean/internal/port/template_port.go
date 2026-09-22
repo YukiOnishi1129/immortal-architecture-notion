@@ -52,6 +52,7 @@ type TemplateUpdateInput struct {
 	OwnerID string
 
 	// NotionParentPageURL is the Notion page notes will be created under.
-	// Empty clears the link.
-	NotionParentPageURL string
+	// nil means the field was not sent and the current link is kept;
+	// an empty string is an explicit request to clear it.
+	NotionParentPageURL *string
 }

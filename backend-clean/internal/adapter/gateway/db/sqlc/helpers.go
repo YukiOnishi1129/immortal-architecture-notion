@@ -45,7 +45,7 @@ func nullableTextToString(t pgtype.Text) string {
 }
 
 // textToStringPtr keeps SQL NULL distinct from an empty string.
-// Used for optional columns the domain models as *string.
+// Used for optional columns that are represented as *string in the domain.
 func textToStringPtr(t pgtype.Text) *string {
 	if !t.Valid {
 		return nil
@@ -78,7 +78,7 @@ func pgNullableText(s *string) pgtype.Text {
 }
 
 // pgTextFromString maps an empty string to SQL NULL.
-// Used for optional columns the domain models as a plain string.
+// Used for optional columns that are represented as plain strings in the domain.
 func pgTextFromString(s string) pgtype.Text {
 	if s == "" {
 		return pgtype.Text{}
