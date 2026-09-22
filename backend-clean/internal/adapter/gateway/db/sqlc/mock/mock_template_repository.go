@@ -21,7 +21,7 @@ type TemplateDBTX struct {
 	QueryErr    error
 
 	// ExistingFields is what ListFieldsByTemplate returns, so tests can
-	// exercise the update and delete branches of ReplaceFields.
+	// exercise the update and delete branches of SyncFields.
 	ExistingFields []*generated.Field
 }
 

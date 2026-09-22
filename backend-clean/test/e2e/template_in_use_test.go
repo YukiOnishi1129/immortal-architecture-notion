@@ -236,3 +236,50 @@ func TestE2E_FieldsCanBeReorderedWhileAdding(t *testing.T) {
 		t.Fatalf("order = %v, want [B A C]", labels)
 	}
 }
+
+// Orders are only required to be positive and unique, so they can be sparse.
+// The parking positions used while reordering must clear the highest order in
+// play, not just the number of fields, or a requested order lands on one.
+func TestE2E_SparseOrdersCanBeReordered(t *testing.T) {
+	a := newApp(t)
+	owner := seedAccount(t)
+
+	res := a.do(http.MethodPost, "/api/templates", map[string]any{
+		"name": "Report", "ownerId": owner,
+		"fields": []map[string]any{
+			{"label": "A", "order": 1, "isRequired": true},
+			{"label": "B", "order": 7, "isRequired": false},
+		},
+	}).expect(t, http.StatusOK)
+	var tpl templateResponse
+	res.decode(t, &tpl)
+
+	// Put a note on it so the in-place path is taken.
+	a.do(http.MethodPost, "/api/notes", map[string]any{
+		"title": "n", "templateId": tpl.ID, "ownerId": owner,
+		"sections": []map[string]any{
+			{"fieldId": tpl.Fields[0].ID, "content": "x"},
+			{"fieldId": tpl.Fields[1].ID, "content": "y"},
+		},
+	}).expect(t, http.StatusOK)
+
+	// Move B to 6 and add a field at 7. With a count-based parking offset the
+	// new row would collide with a parked one.
+	fields := fieldsOf(tpl)
+	fields[1]["order"] = 6
+	fields = append(fields, map[string]any{
+		"label": "C", "order": 7, "isRequired": false,
+	})
+
+	a.updateTemplate(tpl.ID, owner, map[string]any{
+		"id": tpl.ID, "name": tpl.Name, "fields": fields,
+	}).expect(t, http.StatusOK)
+
+	got := a.readTemplate(tpl.ID, owner)
+	if len(got.Fields) != 3 {
+		t.Fatalf("fields = %d, want 3", len(got.Fields))
+	}
+	if got.Fields[1].Order != 6 || got.Fields[2].Order != 7 {
+		t.Fatalf("orders = %d,%d want 6,7", got.Fields[1].Order, got.Fields[2].Order)
+	}
+}

@@ -95,7 +95,6 @@ func (u *TemplateInteractor) Update(ctx context.Context, input port.TemplateUpda
 	if err := template.ValidateTemplateOwnership(current.Template.OwnerID, input.OwnerID); err != nil {
 		return err
 	}
-	var usedFieldIDs []string
 	if input.Fields != nil {
 		if err := template.ValidateTemplate(template.Template{
 			ID:      input.ID,
@@ -103,17 +102,6 @@ func (u *TemplateInteractor) Update(ctx context.Context, input port.TemplateUpda
 			Fields:  input.Fields,
 			OwnerID: input.OwnerID,
 		}); err != nil {
-			return err
-		}
-		// Notes hold content per field, so fields they already use cannot be
-		// renamed or removed. Checked here rather than relying on the database,
-		// which would surface as an unexplained 500.
-		usedFieldIDs, err = u.repo.UsedFieldIDs(ctx, input.ID)
-		if err != nil {
-			return err
-		}
-		if err := template.ValidateFieldsChange(
-			current.Template.Fields, input.Fields, usedFieldIDs); err != nil {
 			return err
 		}
 	}
@@ -140,6 +128,21 @@ func (u *TemplateInteractor) Update(ctx context.Context, input port.TemplateUpda
 			if len(input.Fields) == 0 {
 				return domainerr.ErrInvalidTemplateField
 			}
+			// Read inside the transaction: a note created right after an
+			// outside check would make "unused" wrong, and recreating the
+			// fields would then fail on the foreign key.
+			usedFieldIDs, err := u.repo.UsedFieldIDs(txCtx, input.ID)
+			if err != nil {
+				return err
+			}
+			// Notes hold content per field, so fields they already use cannot
+			// be renamed or removed. Checked here rather than relying on the
+			// database, which would surface as an unexplained 500.
+			if err := template.ValidateFieldsChange(
+				current.Template.Fields, input.Fields, usedFieldIDs); err != nil {
+				return err
+			}
+
 			// Recreating the fields is simpler, but it destroys the ids that
 			// notes point at, so it is only safe while nothing uses them.
 			if len(usedFieldIDs) == 0 {

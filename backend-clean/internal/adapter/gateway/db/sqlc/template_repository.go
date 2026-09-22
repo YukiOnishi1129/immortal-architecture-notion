@@ -257,7 +257,21 @@ func (r *TemplateRepository) SyncFields(ctx context.Context, templateID string, 
 		})
 	}
 
-	parkFrom := int32(len(existing) + len(fields) + 1) //nolint:gosec
+	// Park above every position in play, both the ones currently stored and
+	// the ones being requested. A fixed offset based on counts is not enough:
+	// orders may be sparse, so a requested order can land on a parking spot.
+	maxOrder := 0
+	for _, row := range existing {
+		if int(row.Order) > maxOrder {
+			maxOrder = int(row.Order)
+		}
+	}
+	for idx, f := range fields {
+		if o := orderOrIndex(f, idx); o > maxOrder {
+			maxOrder = o
+		}
+	}
+	parkFrom := int32(maxOrder + 1) //nolint:gosec
 	for i, u := range updates {
 		parked := u
 		parked.Order = parkFrom + int32(i) //nolint:gosec
