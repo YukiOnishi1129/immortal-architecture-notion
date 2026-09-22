@@ -58,6 +58,15 @@ func pgNullableText(s *string) pgtype.Text {
 	return pgtype.Text{String: *s, Valid: true}
 }
 
+// pgTextFromString maps an empty string to SQL NULL.
+// Used for optional columns the domain models as a plain string.
+func pgTextFromString(s string) pgtype.Text {
+	if s == "" {
+		return pgtype.Text{}
+	}
+	return pgtype.Text{String: s, Valid: true}
+}
+
 func pgNullableTime(t *time.Time) pgtype.Timestamptz {
 	if t == nil {
 		return pgtype.Timestamptz{}

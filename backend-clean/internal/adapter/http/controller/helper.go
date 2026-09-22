@@ -20,7 +20,7 @@ func handleError(ctx echo.Context, err error) error {
 		return ctx.JSON(http.StatusForbidden, openapi.ModelsForbiddenError{Code: openapi.ModelsForbiddenErrorCodeFORBIDDEN, Message: err.Error()})
 	case errors.Is(err, account.ErrInvalidEmail), errors.Is(err, account.ErrInvalidName):
 		return ctx.JSON(http.StatusBadRequest, openapi.ModelsBadRequestError{Code: openapi.ModelsBadRequestErrorCodeBADREQUEST, Message: err.Error()})
-	case errors.Is(err, domainerr.ErrInvalidStatus) || errors.Is(err, domainerr.ErrInvalidStatusChange) || errors.Is(err, domainerr.ErrInvalidTemplateField):
+	case errors.Is(err, domainerr.ErrInvalidStatus) || errors.Is(err, domainerr.ErrInvalidStatusChange) || errors.Is(err, domainerr.ErrInvalidTemplateField) || errors.Is(err, domainerr.ErrNotionParentNotSet):
 		return ctx.JSON(http.StatusBadRequest, openapi.ModelsBadRequestError{Code: openapi.ModelsBadRequestErrorCodeBADREQUEST, Message: err.Error()})
 	default:
 		return ctx.JSON(http.StatusInternalServerError, openapi.ModelsErrorResponse{Code: "INTERNAL_ERROR", Message: err.Error()})

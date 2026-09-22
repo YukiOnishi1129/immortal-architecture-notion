@@ -56,18 +56,19 @@ func (q *Queries) CreateField(ctx context.Context, arg *CreateFieldParams) (*Fie
 }
 
 const createTemplate = `-- name: CreateTemplate :one
-INSERT INTO templates (name, owner_id)
-VALUES ($1, $2)
+INSERT INTO templates (name, owner_id, notion_parent_page_id)
+VALUES ($1, $2, $3)
 RETURNING id, name, owner_id, updated_at, notion_parent_page_id
 `
 
 type CreateTemplateParams struct {
-	Name    string      `db:"name" json:"name"`
-	OwnerID pgtype.UUID `db:"owner_id" json:"owner_id"`
+	Name               string      `db:"name" json:"name"`
+	OwnerID            pgtype.UUID `db:"owner_id" json:"owner_id"`
+	NotionParentPageID pgtype.Text `db:"notion_parent_page_id" json:"notion_parent_page_id"`
 }
 
 func (q *Queries) CreateTemplate(ctx context.Context, arg *CreateTemplateParams) (*Template, error) {
-	row := q.db.QueryRow(ctx, createTemplate, arg.Name, arg.OwnerID)
+	row := q.db.QueryRow(ctx, createTemplate, arg.Name, arg.OwnerID, arg.NotionParentPageID)
 	var i Template
 	err := row.Scan(
 		&i.ID,
@@ -293,18 +294,20 @@ const updateTemplate = `-- name: UpdateTemplate :one
 UPDATE templates
 SET
     name = $2,
+    notion_parent_page_id = $3,
     updated_at = NOW()
 WHERE id = $1
 RETURNING id, name, owner_id, updated_at, notion_parent_page_id
 `
 
 type UpdateTemplateParams struct {
-	ID   pgtype.UUID `db:"id" json:"id"`
-	Name string      `db:"name" json:"name"`
+	ID                 pgtype.UUID `db:"id" json:"id"`
+	Name               string      `db:"name" json:"name"`
+	NotionParentPageID pgtype.Text `db:"notion_parent_page_id" json:"notion_parent_page_id"`
 }
 
 func (q *Queries) UpdateTemplate(ctx context.Context, arg *UpdateTemplateParams) (*Template, error) {
-	row := q.db.QueryRow(ctx, updateTemplate, arg.ID, arg.Name)
+	row := q.db.QueryRow(ctx, updateTemplate, arg.ID, arg.Name, arg.NotionParentPageID)
 	var i Template
 	err := row.Scan(
 		&i.ID,

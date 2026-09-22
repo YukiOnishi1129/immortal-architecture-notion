@@ -6,3 +6,4 @@ migrate
 main
 
 /bin/grpc
+tmp/

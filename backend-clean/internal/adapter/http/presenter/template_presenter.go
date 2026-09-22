@@ -81,8 +81,19 @@ func toTemplateResponse(t template.WithUsage) openapi.ModelsTemplateResponse {
 			LastName:  t.Owner.LastName,
 			Thumbnail: t.Owner.Thumbnail,
 		},
-		Fields:    fields,
-		IsUsed:    t.IsUsed,
-		UpdatedAt: t.Template.UpdatedAt,
+		Fields:              fields,
+		IsUsed:              t.IsUsed,
+		UpdatedAt:           t.Template.UpdatedAt,
+		NotionParentPageUrl: notionPageURL(t.Template.NotionParentPageID),
 	}
+}
+
+// notionPageURL builds a browser URL from a stored page id.
+// Returns nil when the template is not linked to Notion.
+func notionPageURL(pageID string) *string {
+	if pageID == "" {
+		return nil
+	}
+	url := "https://www.notion.so/" + pageID
+	return &url
 }
