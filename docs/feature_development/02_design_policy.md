@@ -273,9 +273,9 @@ if err != nil {
 if err := u.tx.WithinTransaction(ctx, func(txCtx context.Context) error {
     ...
 }); err != nil {
-    // DB更新に失敗したので、作ったページを片付ける
+    // このDB更新で新しく作ったページだけを片付ける
     if trashErr := u.notion.Trash(ctx, result.PageID); trashErr != nil {
-        log.Error("孤児ページが残りました", "page_id", result.PageID)
+        log.Error("作成したページが残りました", "page_id", result.PageID)
     }
     return err
 }
@@ -285,6 +285,19 @@ if err := u.tx.WithinTransaction(ctx, func(txCtx context.Context) error {
 **そのページを二度と特定できなくなる**ためです。
 
 掃除自体も失敗しえますが、二重に落ちる確率は低く、落ちても状況は悪化しません。
+
+> **消していいのは「今このとき作ったページ」だけです**
+> 再公開（復元）や公開中の編集でも、DB更新は失敗しえます。
+> そこで同じ掃除を動かすと、**もともとあったページをゴミ箱に入れてしまいます**。
+>
+> ```
+> 初回公開 → ページを作った直後  → 消してよい（IDが失われるため）
+> 再公開   → 復元した直後        → 消してはいけない
+> 編集     → 更新した直後        → 消してはいけない
+> ```
+>
+> 「失敗したら戻す」と考えると全部消したくなりますが、
+> **戻す先は操作ごとに違います**。
 
 **Notion APIを呼ぶコードの置き場所**
 
