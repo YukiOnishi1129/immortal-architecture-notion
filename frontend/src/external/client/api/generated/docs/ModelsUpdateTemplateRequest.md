@@ -10,6 +10,7 @@ Name | Type
 `id` | string
 `name` | string
 `fields` | [Array&lt;ModelsUpdateFieldRequest&gt;](ModelsUpdateFieldRequest.md)
+`notionParentPageUrl` | string
 
 ## Example
 
@@ -21,6 +22,7 @@ const example = {
   "id": null,
   "name": null,
   "fields": null,
+  "notionParentPageUrl": null,
 } satisfies ModelsUpdateTemplateRequest
 
 console.log(example)

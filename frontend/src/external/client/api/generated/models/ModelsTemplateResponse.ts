@@ -76,6 +76,12 @@ export interface ModelsTemplateResponse {
      * @memberof ModelsTemplateResponse
      */
     isUsed: boolean;
+    /**
+     * Notionの置き場所となる親ページのURL
+     * @type {string}
+     * @memberof ModelsTemplateResponse
+     */
+    notionParentPageUrl?: string;
 }
 
 /**
@@ -109,6 +115,7 @@ export function ModelsTemplateResponseFromJSONTyped(json: any, ignoreDiscriminat
         'fields': ((json['fields'] as Array<any>).map(ModelsFieldFromJSON)),
         'updatedAt': (new Date(json['updatedAt'])),
         'isUsed': json['isUsed'],
+        'notionParentPageUrl': json['notionParentPageUrl'] == null ? undefined : json['notionParentPageUrl'],
     };
 }
 
@@ -130,6 +137,7 @@ export function ModelsTemplateResponseToJSONTyped(value?: ModelsTemplateResponse
         'fields': ((value['fields'] as Array<any>).map(ModelsFieldToJSON)),
         'updatedAt': value['updatedAt'].toISOString(),
         'isUsed': value['isUsed'],
+        'notionParentPageUrl': value['notionParentPageUrl'],
     };
 }
 

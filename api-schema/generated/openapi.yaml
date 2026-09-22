@@ -765,6 +765,9 @@ components:
           items:
             $ref: '#/components/schemas/Models.CreateFieldRequest'
           description: フィールド一覧
+        notionParentPageUrl:
+          type: string
+          description: Notionの置き場所となる親ページのURL（未設定なら連携しない）
       description: テンプレート作成リクエスト
     Models.ErrorResponse:
       type: object
@@ -898,6 +901,9 @@ components:
           type: string
           format: date-time
           description: 更新日時
+        notionPageUrl:
+          type: string
+          description: 連携済みNotionページのURL（未連携なら未設定）
       description: ノートレスポンス
     Models.NoteStatus:
       type: string
@@ -974,6 +980,9 @@ components:
         isUsed:
           type: boolean
           description: 使用中フラグ
+        notionParentPageUrl:
+          type: string
+          description: Notionの置き場所となる親ページのURL
       description: テンプレートレスポンス
     Models.UnauthorizedError:
       type: object
@@ -1065,6 +1074,9 @@ components:
           items:
             $ref: '#/components/schemas/Models.UpdateFieldRequest'
           description: フィールド一覧
+        notionParentPageUrl:
+          type: string
+          description: Notionの置き場所となる親ページのURL（未設定なら連携しない）
       description: テンプレート更新リクエスト
 servers:
   - url: https://api.mini-notion.com

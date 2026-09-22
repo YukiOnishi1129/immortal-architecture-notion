@@ -101,6 +101,12 @@ export interface ModelsNoteResponse {
      * @memberof ModelsNoteResponse
      */
     updatedAt: Date;
+    /**
+     * 連携済みNotionページのURL（未連携なら未設定）
+     * @type {string}
+     * @memberof ModelsNoteResponse
+     */
+    notionPageUrl?: string;
 }
 
 
@@ -142,6 +148,7 @@ export function ModelsNoteResponseFromJSONTyped(json: any, ignoreDiscriminator: 
         'sections': ((json['sections'] as Array<any>).map(ModelsSectionFromJSON)),
         'createdAt': (new Date(json['createdAt'])),
         'updatedAt': (new Date(json['updatedAt'])),
+        'notionPageUrl': json['notionPageUrl'] == null ? undefined : json['notionPageUrl'],
     };
 }
 
@@ -166,6 +173,7 @@ export function ModelsNoteResponseToJSONTyped(value?: ModelsNoteResponse | null,
         'sections': ((value['sections'] as Array<any>).map(ModelsSectionToJSON)),
         'createdAt': value['createdAt'].toISOString(),
         'updatedAt': value['updatedAt'].toISOString(),
+        'notionPageUrl': value['notionPageUrl'],
     };
 }
 

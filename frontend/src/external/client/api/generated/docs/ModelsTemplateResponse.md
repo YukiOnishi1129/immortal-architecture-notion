@@ -14,6 +14,7 @@ Name | Type
 `fields` | [Array&lt;ModelsField&gt;](ModelsField.md)
 `updatedAt` | Date
 `isUsed` | boolean
+`notionParentPageUrl` | string
 
 ## Example
 
@@ -29,6 +30,7 @@ const example = {
   "fields": null,
   "updatedAt": null,
   "isUsed": null,
+  "notionParentPageUrl": null,
 } satisfies ModelsTemplateResponse
 
 console.log(example)

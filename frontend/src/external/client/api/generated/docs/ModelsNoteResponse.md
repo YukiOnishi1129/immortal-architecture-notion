@@ -17,6 +17,7 @@ Name | Type
 `sections` | [Array&lt;ModelsSection&gt;](ModelsSection.md)
 `createdAt` | Date
 `updatedAt` | Date
+`notionPageUrl` | string
 
 ## Example
 
@@ -35,6 +36,7 @@ const example = {
   "sections": null,
   "createdAt": null,
   "updatedAt": null,
+  "notionPageUrl": null,
 } satisfies ModelsNoteResponse
 
 console.log(example)
