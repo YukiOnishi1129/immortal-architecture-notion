@@ -45,7 +45,9 @@ func ExtractPageID(rawURL string) (string, error) {
 
 	matches := pageIDPattern.FindAllString(trimmed, -1)
 	if len(matches) == 0 {
-		return "", domainerr.ErrNotionParentNotSet
+		// The value was supplied but holds no page id, which is a
+		// malformed input rather than a missing setting.
+		return "", domainerr.ErrInvalidNotionParentURL
 	}
 
 	// The page id is the last path segment.

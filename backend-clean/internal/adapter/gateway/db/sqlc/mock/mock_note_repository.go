@@ -21,6 +21,10 @@ type NoteDBTX struct {
 	queryErr   error
 	listNotes  []*generated.ListNotesRow
 	sections   []*generated.Section
+
+	// lastQueryRowArgs records the arguments of the most recent QueryRow,
+	// so tests can assert what was actually sent to the database.
+	lastQueryRowArgs []interface{}
 }
 
 // NewNoteDBTX creates a mock DBTX that always returns the given row/err.
@@ -66,8 +70,14 @@ func (m *NoteDBTX) Query(_ context.Context, _ string, args ...interface{}) (pgx.
 }
 
 // QueryRow implements sqlc.DBTX interface.
-func (m *NoteDBTX) QueryRow(_ context.Context, _ string, _ ...interface{}) pgx.Row {
+func (m *NoteDBTX) QueryRow(_ context.Context, _ string, args ...interface{}) pgx.Row {
+	m.lastQueryRowArgs = args
 	return &noteRow{row: m.row, getRow: m.getRow, secRow: m.sectionRow, err: m.rowErr}
+}
+
+// LastQueryRowArgs returns the arguments of the most recent QueryRow call.
+func (m *NoteDBTX) LastQueryRowArgs() []interface{} {
+	return m.lastQueryRowArgs
 }
 
 type noteRow struct {

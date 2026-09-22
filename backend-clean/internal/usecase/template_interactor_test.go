@@ -512,7 +512,7 @@ func TestTemplateInteractor_Update_InvalidNotionURL(t *testing.T) {
 		OwnerID:             "owner-1",
 		NotionParentPageURL: &bad,
 	})
-	if !errors.Is(err, domainerr.ErrNotionParentNotSet) {
-		t.Fatalf("want %v, got %v", domainerr.ErrNotionParentNotSet, err)
+	if !errors.Is(err, domainerr.ErrInvalidNotionParentURL) {
+		t.Fatalf("want %v, got %v", domainerr.ErrInvalidNotionParentURL, err)
 	}
 }

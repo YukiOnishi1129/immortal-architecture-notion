@@ -42,7 +42,7 @@ func TestResolveParentPageID(t *testing.T) {
 		{
 			name:      "[Fail] url without a page id",
 			rawURL:    "https://example.com/abc",
-			wantError: domainerr.ErrNotionParentNotSet,
+			wantError: domainerr.ErrInvalidNotionParentURL,
 		},
 	}
 
