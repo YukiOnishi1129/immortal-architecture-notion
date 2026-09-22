@@ -144,6 +144,31 @@ func (mr *MockTxManagerMockRecorder) WithinTransaction(ctx, fn any) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithinTransaction", reflect.TypeOf((*MockTxManager)(nil).WithinTransaction), ctx, fn)
 }
 
+func (m *MockTemplateRepository) SyncFields(ctx context.Context, templateID string, fields []template.Field) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SyncFields", ctx, templateID, fields)
+	res0, _ := ret[0].(error)
+	return res0
+}
+
+func (mr *MockTemplateRepositoryMockRecorder) SyncFields(ctx, templateID, fields any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncFields", reflect.TypeOf((*MockTemplateRepository)(nil).SyncFields), ctx, templateID, fields)
+}
+
+func (m *MockTemplateRepository) UsedFieldIDs(ctx context.Context, templateID string) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UsedFieldIDs", ctx, templateID)
+	res0, _ := ret[0].([]string)
+	res1, _ := ret[1].(error)
+	return res0, res1
+}
+
+func (mr *MockTemplateRepositoryMockRecorder) UsedFieldIDs(ctx, templateID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UsedFieldIDs", reflect.TypeOf((*MockTemplateRepository)(nil).UsedFieldIDs), ctx, templateID)
+}
+
 // MockTemplateOutputPort is a mock of port.TemplateOutputPort.
 type MockTemplateOutputPort struct {
 	ctrl     *gomock.Controller

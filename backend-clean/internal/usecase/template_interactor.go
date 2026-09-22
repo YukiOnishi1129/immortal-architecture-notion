@@ -128,7 +128,28 @@ func (u *TemplateInteractor) Update(ctx context.Context, input port.TemplateUpda
 			if len(input.Fields) == 0 {
 				return domainerr.ErrInvalidTemplateField
 			}
-			if err := u.repo.ReplaceFields(txCtx, input.ID, input.Fields); err != nil {
+			// Read inside the transaction: a note created right after an
+			// outside check would make "unused" wrong, and recreating the
+			// fields would then fail on the foreign key.
+			usedFieldIDs, err := u.repo.UsedFieldIDs(txCtx, input.ID)
+			if err != nil {
+				return err
+			}
+			// Notes hold content per field, so fields they already use cannot
+			// be renamed or removed. Checked here rather than relying on the
+			// database, which would surface as an unexplained 500.
+			if err := template.ValidateFieldsChange(
+				current.Template.Fields, input.Fields, usedFieldIDs); err != nil {
+				return err
+			}
+
+			// Recreating the fields is simpler, but it destroys the ids that
+			// notes point at, so it is only safe while nothing uses them.
+			if len(usedFieldIDs) == 0 {
+				if err := u.repo.ReplaceFields(txCtx, input.ID, input.Fields); err != nil {
+					return err
+				}
+			} else if err := u.repo.SyncFields(txCtx, input.ID, input.Fields); err != nil {
 				return err
 			}
 		}

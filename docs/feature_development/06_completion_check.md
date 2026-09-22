@@ -43,14 +43,19 @@
 # 1. トークンを環境変数に設定
 echo 'NOTION_API_KEY=ntn_xxxxx' >> backend-clean/.env
 
-# 2. 起動
-docker compose up -d
+# 2. 起動（.env を変えたら restart ではなく作り直す）
+docker compose up -d --force-recreate api
 
 # 3. マイグレーション
 cd backend-clean && make migrate-up
 
 # 4. テンプレート編集画面で、許可済みページのURLを設定
+#    使用中テンプレートでも設定できる（項目だけ非活性）
 ```
+
+> **`restart` では `.env` が読み直されません**
+> 環境変数はコンテナ作成時に決まります。
+> キーを足したのに空のまま、という状態になります。
 
 > **Notion 側の準備を忘れずに**
 > ページをインテグレーションに許可していないと、

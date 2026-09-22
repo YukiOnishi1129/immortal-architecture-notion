@@ -82,3 +82,9 @@ WHERE template_id = $1;
 -- name: DeleteField :exec
 DELETE FROM fields
 WHERE id = $1;
+
+-- name: ListUsedFieldIDsByTemplate :many
+SELECT DISTINCT s.field_id
+FROM sections s
+JOIN fields f ON f.id = s.field_id
+WHERE f.template_id = $1;

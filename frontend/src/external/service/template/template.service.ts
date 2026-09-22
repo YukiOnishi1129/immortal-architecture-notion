@@ -28,6 +28,7 @@ function toTemplateResponse(model: ModelsTemplateResponse): TemplateResponse {
     })),
     updatedAt: model.updatedAt.toISOString(),
     isUsed: model.isUsed,
+    notionParentPageUrl: model.notionParentPageUrl ?? null,
   });
 }
 
@@ -72,6 +73,7 @@ export class TemplateService {
           order: field.order,
           isRequired: field.isRequired,
         })),
+        notionParentPageUrl: input.notionParentPageUrl,
       },
     });
     return toTemplateResponse(template);
@@ -94,6 +96,7 @@ export class TemplateService {
           order: field.order,
           isRequired: field.isRequired,
         })),
+        notionParentPageUrl: input.notionParentPageUrl,
       },
     });
     return toTemplateResponse(template);

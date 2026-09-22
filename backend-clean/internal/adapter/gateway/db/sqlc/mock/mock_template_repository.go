@@ -19,6 +19,10 @@ type TemplateDBTX struct {
 	rowErr      error
 	execErr     error
 	QueryErr    error
+
+	// ExistingFields is what ListFieldsByTemplate returns, so tests can
+	// exercise the update and delete branches of SyncFields.
+	ExistingFields []*generated.Field
 }
 
 // NewTemplateDBTX creates a mock DBTX that always returns the given row/err.
@@ -40,6 +44,9 @@ func (m *TemplateDBTX) Exec(_ context.Context, _ string, _ ...interface{}) (pgco
 func (m *TemplateDBTX) Query(_ context.Context, _ string, _ ...interface{}) (pgx.Rows, error) {
 	if m.QueryErr != nil {
 		return nil, m.QueryErr
+	}
+	if len(m.ExistingFields) > 0 {
+		return &fieldRows{items: m.ExistingFields}, nil
 	}
 	return &emptyRows{}, nil
 }
@@ -106,6 +113,44 @@ func (m *templateRow) FieldDescriptions() []pgconn.FieldDescription { return nil
 func (m *templateRow) RawValues() [][]byte                          { return nil }
 func (m *templateRow) Value(_ int) (interface{}, error)             { return nil, nil }
 func (m *templateRow) Err() error                                   { return m.err }
+
+// fieldRows replays a fixed set of field rows.
+type fieldRows struct {
+	items []*generated.Field
+	idx   int
+}
+
+func (r *fieldRows) Close()                                       {}
+func (r *fieldRows) Err() error                                   { return nil }
+func (r *fieldRows) CommandTag() pgconn.CommandTag                { return pgconn.CommandTag{} }
+func (r *fieldRows) FieldDescriptions() []pgconn.FieldDescription { return nil }
+func (r *fieldRows) Values() ([]interface{}, error)               { return nil, nil }
+func (r *fieldRows) RawValues() [][]byte                          { return nil }
+func (r *fieldRows) Conn() *pgx.Conn                              { return nil }
+
+func (r *fieldRows) Next() bool {
+	if r.idx >= len(r.items) {
+		return false
+	}
+	r.idx++
+	return true
+}
+
+func (r *fieldRows) Scan(dest ...interface{}) error {
+	if r.idx == 0 || r.idx > len(r.items) {
+		return errors.New("fieldRows: scan out of range")
+	}
+	item := r.items[r.idx-1]
+	if len(dest) != 5 {
+		return errors.New("unexpected scan args")
+	}
+	setUUID(dest[0], item.ID)
+	setUUID(dest[1], item.TemplateID)
+	setString(dest[2], item.Label)
+	setInt32Field(dest[3], item.Order)
+	setBool(dest[4], item.IsRequired)
+	return nil
+}
 
 type emptyRows struct{}
 

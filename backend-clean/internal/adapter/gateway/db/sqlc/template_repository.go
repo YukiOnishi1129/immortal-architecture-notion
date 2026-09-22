@@ -176,30 +176,142 @@ func (r *TemplateRepository) Delete(ctx context.Context, id string) error {
 }
 
 // ReplaceFields replaces template fields.
+// ReplaceFields deletes every field and writes the given ones back.
+//
+// Notes reference fields by id, so this is only valid while no note uses them.
+// The caller decides; see SyncFields for the in-place variant.
 func (r *TemplateRepository) ReplaceFields(ctx context.Context, templateID string, fields []template.Field) error {
 	pgID, err := toUUID(templateID)
 	if err != nil {
 		return err
 	}
 	q := queriesForContext(ctx, r.queries)
+
 	if err := q.DeleteFieldsByTemplate(ctx, pgID); err != nil {
 		return err
 	}
 	for idx, f := range fields {
-		order := f.Order
-		if order == 0 {
-			order = idx + 1
-		}
 		if _, err := q.CreateField(ctx, &generated.CreateFieldParams{
 			TemplateID: pgID,
 			Label:      f.Label,
-			Order:      int32(order), //nolint:gosec
+			Order:      int32(orderOrIndex(f, idx)), //nolint:gosec
 			IsRequired: f.IsRequired,
 		}); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// SyncFields makes the stored fields match the given ones without recreating
+// them, so the ids that notes point at survive.
+//
+// Reordering happens in two passes: (template_id, "order") is unique, so
+// moving a field onto a position another one still holds would clash
+// mid-update. Every updated field is first parked above any position in use,
+// then moved into place. The column also has CHECK (order > 0), so the
+// parking positions stay positive.
+func (r *TemplateRepository) SyncFields(ctx context.Context, templateID string, fields []template.Field) error {
+	pgID, err := toUUID(templateID)
+	if err != nil {
+		return err
+	}
+	q := queriesForContext(ctx, r.queries)
+
+	existing, err := q.ListFieldsByTemplate(ctx, pgID)
+	if err != nil {
+		return err
+	}
+	existingByID := make(map[string]*generated.Field, len(existing))
+	for _, row := range existing {
+		existingByID[uuidToString(row.ID)] = row
+	}
+
+	kept := make(map[string]bool, len(fields))
+	updates := make([]generated.UpdateFieldParams, 0, len(fields))
+	creates := make([]generated.CreateFieldParams, 0, len(fields))
+
+	for idx, f := range fields {
+		order := orderOrIndex(f, idx)
+
+		if f.ID != "" && existingByID[f.ID] != nil {
+			fieldID, err := toUUID(f.ID)
+			if err != nil {
+				return err
+			}
+			updates = append(updates, generated.UpdateFieldParams{
+				ID:         fieldID,
+				Label:      f.Label,
+				Order:      int32(order), //nolint:gosec
+				IsRequired: f.IsRequired,
+			})
+			kept[f.ID] = true
+			continue
+		}
+
+		creates = append(creates, generated.CreateFieldParams{
+			TemplateID: pgID,
+			Label:      f.Label,
+			Order:      int32(order), //nolint:gosec
+			IsRequired: f.IsRequired,
+		})
+	}
+
+	// Park above every position in play, both the ones currently stored and
+	// the ones being requested. A fixed offset based on counts is not enough:
+	// orders may be sparse, so a requested order can land on a parking spot.
+	maxOrder := 0
+	for _, row := range existing {
+		if int(row.Order) > maxOrder {
+			maxOrder = int(row.Order)
+		}
+	}
+	for idx, f := range fields {
+		if o := orderOrIndex(f, idx); o > maxOrder {
+			maxOrder = o
+		}
+	}
+	parkFrom := int32(maxOrder + 1) //nolint:gosec
+	for i, u := range updates {
+		parked := u
+		parked.Order = parkFrom + int32(i) //nolint:gosec
+		if _, err := q.UpdateField(ctx, &parked); err != nil {
+			return err
+		}
+	}
+
+	// New rows go in while the existing ones are parked, so their positions
+	// are free.
+	for i := range creates {
+		if _, err := q.CreateField(ctx, &creates[i]); err != nil {
+			return err
+		}
+	}
+	for i := range updates {
+		if _, err := q.UpdateField(ctx, &updates[i]); err != nil {
+			return err
+		}
+	}
+
+	// Anything the caller left out is removed. This still fails when a note
+	// uses the field, which is the intended protection.
+	for id, row := range existingByID {
+		if kept[id] {
+			continue
+		}
+		if err := q.DeleteField(ctx, row.ID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// orderOrIndex falls back to the position in the slice when no order is set.
+func orderOrIndex(f template.Field, idx int) int {
+	if f.Order == 0 {
+		return idx + 1
+	}
+	return f.Order
 }
 
 func (r *TemplateRepository) listFields(ctx context.Context, templateID pgtype.UUID) ([]template.Field, error) {
@@ -217,4 +329,21 @@ func (r *TemplateRepository) listFields(ctx context.Context, templateID pgtype.U
 		})
 	}
 	return fields, nil
+}
+
+// UsedFieldIDs returns the fields of a template that notes reference.
+func (r *TemplateRepository) UsedFieldIDs(ctx context.Context, templateID string) ([]string, error) {
+	pgID, err := toUUID(templateID)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := queriesForContext(ctx, r.queries).ListUsedFieldIDsByTemplate(ctx, pgID)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]string, 0, len(rows))
+	for _, id := range rows {
+		ids = append(ids, uuidToString(id))
+	}
+	return ids, nil
 }

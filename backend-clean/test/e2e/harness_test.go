@@ -164,8 +164,13 @@ func seedAccount(t *testing.T) string {
 
 type templateResponse struct {
 	ID     string `json:"id"`
+	Name   string `json:"name"`
+	IsUsed bool   `json:"isUsed"`
 	Fields []struct {
-		ID string `json:"id"`
+		ID         string `json:"id"`
+		Label      string `json:"label"`
+		Order      int    `json:"order"`
+		IsRequired bool   `json:"isRequired"`
 	} `json:"fields"`
 	NotionParentPageURL *string `json:"notionParentPageUrl"`
 }

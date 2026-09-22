@@ -13,6 +13,7 @@ import { Checkbox } from "@/shared/components/ui/checkbox";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -73,6 +74,33 @@ export function TemplateNewFormPresenter({
                       maxLength={100}
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="notionParentPageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    NotionのページURL
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      任意
+                    </span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="https://www.notion.so/..."
+                      inputMode="url"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    このテンプレートで作ったノートを公開すると、指定したページの下に
+                    Notionのページが作られます。空にすると連携しません。
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

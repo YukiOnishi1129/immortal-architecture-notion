@@ -255,6 +255,33 @@ func (q *Queries) ListTemplates(ctx context.Context, arg *ListTemplatesParams) (
 	return items, nil
 }
 
+const listUsedFieldIDsByTemplate = `-- name: ListUsedFieldIDsByTemplate :many
+SELECT DISTINCT s.field_id
+FROM sections s
+JOIN fields f ON f.id = s.field_id
+WHERE f.template_id = $1
+`
+
+func (q *Queries) ListUsedFieldIDsByTemplate(ctx context.Context, templateID pgtype.UUID) ([]pgtype.UUID, error) {
+	rows, err := q.db.Query(ctx, listUsedFieldIDsByTemplate, templateID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []pgtype.UUID
+	for rows.Next() {
+		var field_id pgtype.UUID
+		if err := rows.Scan(&field_id); err != nil {
+			return nil, err
+		}
+		items = append(items, field_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateField = `-- name: UpdateField :one
 UPDATE fields
 SET
