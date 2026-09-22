@@ -108,8 +108,8 @@ const upsertNoteReadModel = `-- name: UpsertNoteReadModel :exec
 INSERT INTO note_read_models (
     id, title, status, template_id, template_name,
     owner_id, owner_first_name, owner_last_name, owner_thumbnail,
-    sections_json, created_at, updated_at
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    sections_json, created_at, updated_at, notion_page_url
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 ON CONFLICT (id) DO UPDATE SET
     title = EXCLUDED.title,
     status = EXCLUDED.status,
@@ -120,7 +120,8 @@ ON CONFLICT (id) DO UPDATE SET
     owner_last_name = EXCLUDED.owner_last_name,
     owner_thumbnail = EXCLUDED.owner_thumbnail,
     sections_json = EXCLUDED.sections_json,
-    updated_at = EXCLUDED.updated_at
+    updated_at = EXCLUDED.updated_at,
+    notion_page_url = EXCLUDED.notion_page_url
 `
 
 type UpsertNoteReadModelParams struct {
@@ -136,6 +137,7 @@ type UpsertNoteReadModelParams struct {
 	SectionsJson   []byte             `db:"sections_json" json:"sections_json"`
 	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	NotionPageUrl  pgtype.Text        `db:"notion_page_url" json:"notion_page_url"`
 }
 
 func (q *Queries) UpsertNoteReadModel(ctx context.Context, arg *UpsertNoteReadModelParams) error {
@@ -152,6 +154,7 @@ func (q *Queries) UpsertNoteReadModel(ctx context.Context, arg *UpsertNoteReadMo
 		arg.SectionsJson,
 		arg.CreatedAt,
 		arg.UpdatedAt,
+		arg.NotionPageUrl,
 	)
 	return err
 }

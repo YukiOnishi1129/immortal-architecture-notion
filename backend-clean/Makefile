@@ -35,6 +35,13 @@ lint:
 test:
 	@GOCACHE=$(GOCACHE) GOMODCACHE=$(GOMODCACHE) $(GO_TEST) ./...
 
+# Run the API end-to-end tests against a throwaway PostgreSQL container.
+# Notion is faked; everything else is the production wiring.
+# Requires Docker. Excluded from `make test` because CI has no database.
+.PHONY: test-e2e
+test-e2e:
+	$(GO_TEST) -tags e2e -count=1 -p 1 ./test/e2e/...
+
 # Run all tests (override flags with TEST_FLAGS, e.g. TEST_FLAGS="-count=1 -v")
 .PHONY: test-all
 test-all:

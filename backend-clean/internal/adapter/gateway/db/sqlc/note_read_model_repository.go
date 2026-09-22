@@ -119,6 +119,7 @@ func (r *NoteReadModelRepository) Upsert(ctx context.Context, model note.ReadMod
 		SectionsJson:   sectionsJSON,
 		CreatedAt:      timeToPgTimestamptz(model.CreatedAt),
 		UpdatedAt:      timeToPgTimestamptz(model.UpdatedAt),
+		NotionPageUrl:  pgNullableText(model.NotionPageURL),
 	})
 }
 
@@ -158,5 +159,6 @@ func toNoteReadModel(row *generated.NoteReadModel) (note.ReadModel, error) {
 		Sections:       sections,
 		CreatedAt:      timestamptzToTime(row.CreatedAt),
 		UpdatedAt:      timestamptzToTime(row.UpdatedAt),
+		NotionPageURL:  textToStringPtr(row.NotionPageUrl),
 	}, nil
 }

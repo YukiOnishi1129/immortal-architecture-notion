@@ -161,7 +161,7 @@ func TestNoteCommandInteractor_Create(t *testing.T) {
 				}
 			}
 
-			interactor := uc.NewNoteCommandInteractor(notes, readModels, templates, tx, output)
+			interactor := uc.NewNoteCommandInteractor(notes, readModels, templates, tx, output, nil)
 			err := interactor.Create(context.Background(), tt.input)
 
 			assertError(t, err, tt.wantError)
@@ -346,7 +346,7 @@ func TestNoteCommandInteractor_Update(t *testing.T) {
 				}
 			}
 
-			interactor := uc.NewNoteCommandInteractor(notes, readModels, templates, tx, output)
+			interactor := uc.NewNoteCommandInteractor(notes, readModels, templates, tx, output, nil)
 			err := interactor.Update(context.Background(), tt.input)
 
 			assertError(t, err, tt.wantError)
@@ -450,21 +450,28 @@ func TestNoteCommandInteractor_ChangeStatus(t *testing.T) {
 			notes.EXPECT().Get(gomock.Any(), tt.input.ID).Return(tt.current, tt.getErr)
 
 			if tt.expectCall {
+				// The status update, the Notion page id and the read model are
+				// committed together, so they now run inside a transaction.
+				tx.EXPECT().WithinTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, fn func(context.Context) error) error { return fn(ctx) },
+				)
 				notes.EXPECT().UpdateStatus(gomock.Any(), tt.input.ID, tt.input.Status).
 					Return(&tt.current.Note, tt.updateErr)
 
 				if tt.updateErr == nil {
-					// ChangeStatus reloads the note after updating.
+					// The note is reloaded inside the transaction to build the
+					// read model, and again afterwards for the response.
 					notes.EXPECT().Get(gomock.Any(), tt.input.ID).Return(tt.current, nil)
 					readModels.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(tt.upsertErr)
 
 					if tt.upsertErr == nil {
+						notes.EXPECT().Get(gomock.Any(), tt.input.ID).Return(tt.current, nil)
 						output.EXPECT().PresentNote(gomock.Any(), tt.current).Return(nil)
 					}
 				}
 			}
 
-			interactor := uc.NewNoteCommandInteractor(notes, readModels, templates, tx, output)
+			interactor := uc.NewNoteCommandInteractor(notes, readModels, templates, tx, output, nil)
 			err := interactor.ChangeStatus(context.Background(), tt.input)
 
 			assertError(t, err, tt.wantError)
@@ -551,7 +558,7 @@ func TestNoteCommandInteractor_Delete(t *testing.T) {
 				}
 			}
 
-			interactor := uc.NewNoteCommandInteractor(notes, readModels, templates, tx, output)
+			interactor := uc.NewNoteCommandInteractor(notes, readModels, templates, tx, output, nil)
 			err := interactor.Delete(context.Background(), tt.noteID, tt.ownerID)
 
 			assertError(t, err, tt.wantError)

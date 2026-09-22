@@ -22,6 +22,13 @@ func handleError(ctx echo.Context, err error) error {
 		return ctx.JSON(http.StatusBadRequest, openapi.ModelsBadRequestError{Code: openapi.ModelsBadRequestErrorCodeBADREQUEST, Message: err.Error()})
 	case errors.Is(err, domainerr.ErrInvalidStatus) || errors.Is(err, domainerr.ErrInvalidStatusChange) || errors.Is(err, domainerr.ErrInvalidTemplateField) || errors.Is(err, domainerr.ErrNotionParentNotSet) || errors.Is(err, domainerr.ErrInvalidNotionParentURL):
 		return ctx.JSON(http.StatusBadRequest, openapi.ModelsBadRequestError{Code: openapi.ModelsBadRequestErrorCodeBADREQUEST, Message: err.Error()})
+	case errors.Is(err, domainerr.ErrNotionSyncFailed):
+		// The note was left untouched, so retrying the same action is safe.
+		// The underlying cause is not exposed; it is only useful in the logs.
+		return ctx.JSON(http.StatusInternalServerError, openapi.ModelsErrorResponse{
+			Code:    "NOTION_SYNC_FAILED",
+			Message: "failed to sync with Notion, please try again",
+		})
 	default:
 		return ctx.JSON(http.StatusInternalServerError, openapi.ModelsErrorResponse{Code: "INTERNAL_ERROR", Message: err.Error()})
 	}
