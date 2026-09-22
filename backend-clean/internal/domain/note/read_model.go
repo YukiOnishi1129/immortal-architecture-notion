@@ -17,6 +17,10 @@ type ReadModel struct {
 	Sections       []SectionReadModel
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
+
+	// NotionPageURL is shown as the "open in Notion" link.
+	// Only the URL is exposed here; the page id stays in note.Note.
+	NotionPageURL *string
 }
 
 // SectionReadModel is the denormalized read model for sections.
