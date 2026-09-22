@@ -17,9 +17,11 @@ func (a *app) updateTemplate(templateID, ownerID string, body map[string]any) re
 // fieldsOf turns a template's fields back into an update payload, keeping ids.
 func fieldsOf(tpl templateResponse) []map[string]any {
 	out := make([]map[string]any, 0, len(tpl.Fields))
-	for i, f := range tpl.Fields {
+	for _, f := range tpl.Fields {
+		// Echo back exactly what the API returned, so a test only changes what
+		// it means to change.
 		out = append(out, map[string]any{
-			"id": f.ID, "label": f.Label, "order": i + 1, "isRequired": true,
+			"id": f.ID, "label": f.Label, "order": f.Order, "isRequired": f.IsRequired,
 		})
 	}
 	return out
@@ -153,5 +155,84 @@ func TestE2E_UnusedTemplateFieldsStayEditable(t *testing.T) {
 	got := a.readTemplate(tpl.ID, owner)
 	if got.Fields[0].Label != "書き換えた" {
 		t.Fatalf("label = %q, want it renamed", got.Fields[0].Label)
+	}
+}
+
+// Reordering fields must work even though (template_id, "order") is unique:
+// moving a field onto a position another one still holds would clash unless
+// the update is done in two passes.
+func TestE2E_FieldsCanBeReordered(t *testing.T) {
+	a := newApp(t)
+	owner := seedAccount(t)
+
+	res := a.do(http.MethodPost, "/api/templates", map[string]any{
+		"name": "Report", "ownerId": owner,
+		"fields": []map[string]any{
+			{"label": "A", "order": 1, "isRequired": true},
+			{"label": "B", "order": 2, "isRequired": false},
+			{"label": "C", "order": 3, "isRequired": false},
+		},
+	}).expect(t, http.StatusOK)
+	var tpl templateResponse
+	res.decode(t, &tpl)
+
+	// Reverse the order, keeping every id.
+	fields := fieldsOf(tpl)
+	reversed := make([]map[string]any, 0, len(fields))
+	for i := len(fields) - 1; i >= 0; i-- {
+		f := fields[i]
+		f["order"] = len(fields) - i
+		reversed = append(reversed, f)
+	}
+
+	a.updateTemplate(tpl.ID, owner, map[string]any{
+		"id": tpl.ID, "name": tpl.Name, "fields": reversed,
+	}).expect(t, http.StatusOK)
+
+	got := a.readTemplate(tpl.ID, owner)
+	labels := make([]string, 0, len(got.Fields))
+	for _, f := range got.Fields {
+		labels = append(labels, f.Label)
+	}
+	if len(labels) != 3 || labels[0] != "C" || labels[1] != "B" || labels[2] != "A" {
+		t.Fatalf("order = %v, want [C B A]", labels)
+	}
+}
+
+// Reordering and adding a field in the same request also has to avoid the
+// unique constraint, since the new row needs a position too.
+func TestE2E_FieldsCanBeReorderedWhileAdding(t *testing.T) {
+	a := newApp(t)
+	owner := seedAccount(t)
+
+	res := a.do(http.MethodPost, "/api/templates", map[string]any{
+		"name": "Report", "ownerId": owner,
+		"fields": []map[string]any{
+			{"label": "A", "order": 1, "isRequired": true},
+			{"label": "B", "order": 2, "isRequired": false},
+		},
+	}).expect(t, http.StatusOK)
+	var tpl templateResponse
+	res.decode(t, &tpl)
+
+	fields := fieldsOf(tpl)
+	swapped := []map[string]any{fields[1], fields[0]}
+	swapped[0]["order"] = 1
+	swapped[1]["order"] = 2
+	swapped = append(swapped, map[string]any{
+		"label": "C", "order": 3, "isRequired": false,
+	})
+
+	a.updateTemplate(tpl.ID, owner, map[string]any{
+		"id": tpl.ID, "name": tpl.Name, "fields": swapped,
+	}).expect(t, http.StatusOK)
+
+	got := a.readTemplate(tpl.ID, owner)
+	labels := make([]string, 0, len(got.Fields))
+	for _, f := range got.Fields {
+		labels = append(labels, f.Label)
+	}
+	if len(labels) != 3 || labels[0] != "B" || labels[1] != "A" || labels[2] != "C" {
+		t.Fatalf("order = %v, want [B A C]", labels)
 	}
 }

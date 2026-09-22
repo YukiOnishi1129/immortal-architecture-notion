@@ -95,6 +95,7 @@ func (u *TemplateInteractor) Update(ctx context.Context, input port.TemplateUpda
 	if err := template.ValidateTemplateOwnership(current.Template.OwnerID, input.OwnerID); err != nil {
 		return err
 	}
+	var usedFieldIDs []string
 	if input.Fields != nil {
 		if err := template.ValidateTemplate(template.Template{
 			ID:      input.ID,
@@ -107,7 +108,7 @@ func (u *TemplateInteractor) Update(ctx context.Context, input port.TemplateUpda
 		// Notes hold content per field, so fields they already use cannot be
 		// renamed or removed. Checked here rather than relying on the database,
 		// which would surface as an unexplained 500.
-		usedFieldIDs, err := u.repo.UsedFieldIDs(ctx, input.ID)
+		usedFieldIDs, err = u.repo.UsedFieldIDs(ctx, input.ID)
 		if err != nil {
 			return err
 		}
@@ -139,7 +140,13 @@ func (u *TemplateInteractor) Update(ctx context.Context, input port.TemplateUpda
 			if len(input.Fields) == 0 {
 				return domainerr.ErrInvalidTemplateField
 			}
-			if err := u.repo.ReplaceFields(txCtx, input.ID, input.Fields); err != nil {
+			// Recreating the fields is simpler, but it destroys the ids that
+			// notes point at, so it is only safe while nothing uses them.
+			if len(usedFieldIDs) == 0 {
+				if err := u.repo.ReplaceFields(txCtx, input.ID, input.Fields); err != nil {
+					return err
+				}
+			} else if err := u.repo.SyncFields(txCtx, input.ID, input.Fields); err != nil {
 				return err
 			}
 		}

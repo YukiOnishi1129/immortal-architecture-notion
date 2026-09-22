@@ -208,6 +208,74 @@ func TestTemplateRepository_List(t *testing.T) {
 
 func TestTemplateRepository_ReplaceFields(t *testing.T) {
 	tplID := pgtype.UUID{Bytes: [16]byte{1}, Valid: true}
+	returnedRow := &generated.Field{
+		ID: pgtype.UUID{Bytes: [16]byte{2}, Valid: true}, TemplateID: tplID,
+		Label: "lbl", Order: 1, IsRequired: true,
+	}
+
+	tests := []struct {
+		name    string
+		tplID   string
+		fields  []template.Field
+		rowErr  error
+		execErr error
+		wantErr bool
+	}{
+		{
+			name:   "[Success] fields are recreated",
+			tplID:  tplID.String(),
+			fields: []template.Field{{Label: "lbl", Order: 1, IsRequired: true}},
+		},
+		{
+			name:   "[Success] order falls back to the position",
+			tplID:  tplID.String(),
+			fields: []template.Field{{Label: "lbl"}},
+		},
+		{
+			name:    "[Fail] invalid template uuid",
+			tplID:   "bad-uuid",
+			fields:  []template.Field{{Label: "lbl"}},
+			wantErr: true,
+		},
+		{
+			name:    "[Fail] delete error",
+			tplID:   tplID.String(),
+			fields:  []template.Field{{Label: "lbl"}},
+			execErr: errors.New("del error"),
+			wantErr: true,
+		},
+		{
+			name:    "[Fail] create error",
+			tplID:   tplID.String(),
+			fields:  []template.Field{{Label: "lbl"}},
+			rowErr:  errors.New("create error"),
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mock := mockdb.NewTemplateDBTX(nil, nil, tt.rowErr, tt.execErr)
+			mock.FieldRow = returnedRow
+
+			repo := &TemplateRepository{queries: generated.New(mock)}
+			err := repo.ReplaceFields(context.Background(), tt.tplID, tt.fields)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestTemplateRepository_SyncFields(t *testing.T) {
+	tplID := pgtype.UUID{Bytes: [16]byte{1}, Valid: true}
 	existingID := pgtype.UUID{Bytes: [16]byte{2}, Valid: true}
 	existing := &generated.Field{
 		ID: existingID, TemplateID: tplID, Label: "old", Order: 1, IsRequired: true,
@@ -217,20 +285,17 @@ func TestTemplateRepository_ReplaceFields(t *testing.T) {
 	}
 
 	tests := []struct {
-		name string
-
+		name     string
 		tplID    string
 		fields   []template.Field
 		existing []*generated.Field
 		rowErr   error
 		execErr  error
 		queryErr error
-
-		wantErr bool
+		wantErr  bool
 	}{
 		{
-			// A field carrying a known id is updated, never deleted, so a
-			// template already used by a note can still be edited.
+			// The id survives, which is what notes depend on.
 			name:     "[Success] existing field is updated in place",
 			tplID:    tplID.String(),
 			fields:   []template.Field{{ID: existingID.String(), Label: "lbl", Order: 1, IsRequired: true}},
@@ -293,7 +358,7 @@ func TestTemplateRepository_ReplaceFields(t *testing.T) {
 			mock.QueryErr = tt.queryErr
 
 			repo := &TemplateRepository{queries: generated.New(mock)}
-			err := repo.ReplaceFields(context.Background(), tt.tplID, tt.fields)
+			err := repo.SyncFields(context.Background(), tt.tplID, tt.fields)
 
 			if tt.wantErr {
 				if err == nil {

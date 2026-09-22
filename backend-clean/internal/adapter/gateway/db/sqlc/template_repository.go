@@ -176,14 +176,42 @@ func (r *TemplateRepository) Delete(ctx context.Context, id string) error {
 }
 
 // ReplaceFields replaces template fields.
-// ReplaceFields makes the stored fields match the given ones.
+// ReplaceFields deletes every field and writes the given ones back.
 //
-// Fields are updated in place rather than deleted and re-created, because a
-// field that a note already has a section for cannot be deleted: the section
-// references it. Re-creating every field would therefore fail as soon as the
-// template is in use, which also blocks edits that leave the fields alone,
-// such as renaming the template or setting its Notion parent page.
+// Notes reference fields by id, so this is only valid while no note uses them.
+// The caller decides; see SyncFields for the in-place variant.
 func (r *TemplateRepository) ReplaceFields(ctx context.Context, templateID string, fields []template.Field) error {
+	pgID, err := toUUID(templateID)
+	if err != nil {
+		return err
+	}
+	q := queriesForContext(ctx, r.queries)
+
+	if err := q.DeleteFieldsByTemplate(ctx, pgID); err != nil {
+		return err
+	}
+	for idx, f := range fields {
+		if _, err := q.CreateField(ctx, &generated.CreateFieldParams{
+			TemplateID: pgID,
+			Label:      f.Label,
+			Order:      int32(orderOrIndex(f, idx)), //nolint:gosec
+			IsRequired: f.IsRequired,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// SyncFields makes the stored fields match the given ones without recreating
+// them, so the ids that notes point at survive.
+//
+// Reordering happens in two passes: (template_id, "order") is unique, so
+// moving a field onto a position another one still holds would clash
+// mid-update. Every updated field is first parked above any position in use,
+// then moved into place. The column also has CHECK (order > 0), so the
+// parking positions stay positive.
+func (r *TemplateRepository) SyncFields(ctx context.Context, templateID string, fields []template.Field) error {
 	pgID, err := toUUID(templateID)
 	if err != nil {
 		return err
@@ -200,41 +228,58 @@ func (r *TemplateRepository) ReplaceFields(ctx context.Context, templateID strin
 	}
 
 	kept := make(map[string]bool, len(fields))
-	for idx, f := range fields {
-		order := f.Order
-		if order == 0 {
-			order = idx + 1
-		}
+	updates := make([]generated.UpdateFieldParams, 0, len(fields))
+	creates := make([]generated.CreateFieldParams, 0, len(fields))
 
-		// A field carrying a known id is an existing one being edited.
+	for idx, f := range fields {
+		order := orderOrIndex(f, idx)
+
 		if f.ID != "" && existingByID[f.ID] != nil {
 			fieldID, err := toUUID(f.ID)
 			if err != nil {
 				return err
 			}
-			if _, err := q.UpdateField(ctx, &generated.UpdateFieldParams{
+			updates = append(updates, generated.UpdateFieldParams{
 				ID:         fieldID,
 				Label:      f.Label,
 				Order:      int32(order), //nolint:gosec
 				IsRequired: f.IsRequired,
-			}); err != nil {
-				return err
-			}
+			})
 			kept[f.ID] = true
 			continue
 		}
 
-		if _, err := q.CreateField(ctx, &generated.CreateFieldParams{
+		creates = append(creates, generated.CreateFieldParams{
 			TemplateID: pgID,
 			Label:      f.Label,
 			Order:      int32(order), //nolint:gosec
 			IsRequired: f.IsRequired,
-		}); err != nil {
+		})
+	}
+
+	parkFrom := int32(len(existing) + len(fields) + 1) //nolint:gosec
+	for i, u := range updates {
+		parked := u
+		parked.Order = parkFrom + int32(i) //nolint:gosec
+		if _, err := q.UpdateField(ctx, &parked); err != nil {
 			return err
 		}
 	}
 
-	// Whatever the caller left out is removed. This still fails when a note
+	// New rows go in while the existing ones are parked, so their positions
+	// are free.
+	for i := range creates {
+		if _, err := q.CreateField(ctx, &creates[i]); err != nil {
+			return err
+		}
+	}
+	for i := range updates {
+		if _, err := q.UpdateField(ctx, &updates[i]); err != nil {
+			return err
+		}
+	}
+
+	// Anything the caller left out is removed. This still fails when a note
 	// uses the field, which is the intended protection.
 	for id, row := range existingByID {
 		if kept[id] {
@@ -245,6 +290,14 @@ func (r *TemplateRepository) ReplaceFields(ctx context.Context, templateID strin
 		}
 	}
 	return nil
+}
+
+// orderOrIndex falls back to the position in the slice when no order is set.
+func orderOrIndex(f template.Field, idx int) int {
+	if f.Order == 0 {
+		return idx + 1
+	}
+	return f.Order
 }
 
 func (r *TemplateRepository) listFields(ctx context.Context, templateID pgtype.UUID) ([]template.Field, error) {

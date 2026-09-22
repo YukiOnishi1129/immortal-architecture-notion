@@ -61,8 +61,7 @@ export const TemplateDetailResponseSchema = z.object({
 export const CreateTemplateRequestSchema = z.object({
   name: z.string().min(1).max(100),
   fields: z.array(FieldInputSchema).min(1),
-  // NotionのページURL。未設定なら連携しない。
-  // 空文字は「解除」、項目なしは「変更しない」を意味する。
+  // NotionのページURL。省略しても空文字でも、未連携で作られる。
   notionParentPageUrl: z.string().optional(),
 });
 

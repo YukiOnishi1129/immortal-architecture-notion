@@ -149,6 +149,7 @@ export function TemplateEditFormPresenter({
                             key={field.id}
                             draggableId={field.id}
                             index={index}
+                            isDragDisabled={isUsed}
                           >
                             {(provided, snapshot) => (
                               <div
@@ -160,7 +161,11 @@ export function TemplateEditFormPresenter({
                               >
                                 <div
                                   {...provided.dragHandleProps}
-                                  className="cursor-move"
+                                  className={
+                                    isUsed
+                                      ? "cursor-not-allowed opacity-50"
+                                      : "cursor-move"
+                                  }
                                 >
                                   <GripVertical className="w-5 h-5 text-gray-400" />
                                 </div>

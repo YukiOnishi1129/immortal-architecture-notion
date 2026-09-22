@@ -144,6 +144,18 @@ func (mr *MockTxManagerMockRecorder) WithinTransaction(ctx, fn any) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithinTransaction", reflect.TypeOf((*MockTxManager)(nil).WithinTransaction), ctx, fn)
 }
 
+func (m *MockTemplateRepository) SyncFields(ctx context.Context, templateID string, fields []template.Field) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SyncFields", ctx, templateID, fields)
+	res0, _ := ret[0].(error)
+	return res0
+}
+
+func (mr *MockTemplateRepositoryMockRecorder) SyncFields(ctx, templateID, fields any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncFields", reflect.TypeOf((*MockTemplateRepository)(nil).SyncFields), ctx, templateID, fields)
+}
+
 func (m *MockTemplateRepository) UsedFieldIDs(ctx context.Context, templateID string) ([]string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UsedFieldIDs", ctx, templateID)
