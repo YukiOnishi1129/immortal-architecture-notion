@@ -8,6 +8,8 @@ import {
   NoteResponseSchema,
   type PublishNoteRequest,
   PublishNoteRequestSchema,
+  type SyncNoteToNotionRequest,
+  SyncNoteToNotionRequestSchema,
   type UnpublishNoteRequest,
   UnpublishNoteRequestSchema,
   type UpdateNoteByIdRequest,
@@ -43,6 +45,16 @@ export async function publishNoteCommand(
 ) {
   const validated = PublishNoteRequestSchema.parse(request);
   const note = await noteService.publishNote(validated.noteId, accountId);
+  return NoteResponseSchema.parse(note);
+}
+
+// NOTE: 認証チェック（withAuth）は .action.ts で行う
+export async function syncNoteToNotionCommand(
+  request: SyncNoteToNotionRequest,
+  accountId: string,
+) {
+  const validated = SyncNoteToNotionRequestSchema.parse(request);
+  const note = await noteService.syncNoteToNotion(validated.noteId, accountId);
   return NoteResponseSchema.parse(note);
 }
 

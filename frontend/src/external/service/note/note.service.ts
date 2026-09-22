@@ -34,6 +34,7 @@ function toNoteResponse(model: ModelsNoteResponse): NoteResponse {
     })),
     createdAt: model.createdAt.toISOString(),
     updatedAt: model.updatedAt.toISOString(),
+    notionPageUrl: model.notionPageUrl ?? null,
   });
 }
 
@@ -119,6 +120,15 @@ export class NoteService {
 
   async unpublishNote(noteId: string, ownerId: string): Promise<NoteResponse> {
     const note = await this.api.notesUnpublishNote({ noteId, ownerId });
+    return toNoteResponse(note);
+  }
+
+  /** 公開済みなのにNotionへ未連携のノートを、手動で連携する。 */
+  async syncNoteToNotion(
+    noteId: string,
+    ownerId: string,
+  ): Promise<NoteResponse> {
+    const note = await this.api.notesSyncNoteToNotion({ noteId, ownerId });
     return toNoteResponse(note);
   }
 

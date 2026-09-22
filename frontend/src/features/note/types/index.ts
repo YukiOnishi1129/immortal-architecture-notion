@@ -28,6 +28,8 @@ export interface Note {
   sections: NoteSection[];
   createdAt: string;
   updatedAt: string;
+  /** 連携済みNotionページのURL。未連携なら null。 */
+  notionPageUrl?: string | null;
 }
 
 export interface NoteFilters {

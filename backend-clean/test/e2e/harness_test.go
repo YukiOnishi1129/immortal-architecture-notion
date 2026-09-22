@@ -25,6 +25,10 @@ type app struct {
 	server *echo.Echo
 	notion *fakeNotion
 	t      *testing.T
+
+	// Kept so a test can move between the two wirings without losing data.
+	notionEnabledServer  *echo.Echo
+	notionDisabledServer *echo.Echo
 }
 
 func newApp(t *testing.T) *app {
@@ -58,7 +62,7 @@ func newApp(t *testing.T) *app {
 
 	e := echo.New()
 	openapi.RegisterHandlers(e, httpcontroller.NewServer(ac, nc, tc))
-	return &app{server: e, notion: notion, t: t}
+	return &app{server: e, notionEnabledServer: e, notion: notion, t: t}
 }
 
 // newAppWithoutNotion wires the API with the integration switched off,
@@ -89,7 +93,18 @@ func newAppWithoutNotion(t *testing.T) *app {
 	)
 	e := echo.New()
 	openapi.RegisterHandlers(e, httpcontroller.NewServer(ac, nc, tc))
+	// The fake Notion client is kept, so a test can switch back to the wired
+	// server and act on data created while the integration was off.
+	a.notionDisabledServer = e
 	a.server = e
+	return a
+}
+
+// withNotion switches back to the server that has the Notion client wired,
+// leaving the data created while it was off in place.
+func (a *app) withNotion() *app {
+	a.t.Helper()
+	a.server = a.notionEnabledServer
 	return a
 }
 

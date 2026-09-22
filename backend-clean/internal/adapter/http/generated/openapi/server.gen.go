@@ -434,6 +434,12 @@ type NotesUpdateNoteParams struct {
 	OwnerId string `form:"ownerId" json:"ownerId"`
 }
 
+// NotesSyncNoteToNotionParams defines parameters for NotesSyncNoteToNotion.
+type NotesSyncNoteToNotionParams struct {
+	// OwnerId 所有者ID（操作権限チェック用）
+	OwnerId string `form:"ownerId" json:"ownerId"`
+}
+
 // NotesPublishNoteParams defines parameters for NotesPublishNote.
 type NotesPublishNoteParams struct {
 	// OwnerId 所有者ID（公開権限チェック用）
@@ -509,6 +515,9 @@ type ServerInterface interface {
 	// Update note
 	// (PUT /api/notes/{noteId})
 	NotesUpdateNote(ctx echo.Context, noteId string, params NotesUpdateNoteParams) error
+	// Sync note to Notion
+	// (POST /api/notes/{noteId}/notion-sync)
+	NotesSyncNoteToNotion(ctx echo.Context, noteId string, params NotesSyncNoteToNotionParams) error
 	// Publish note
 	// (POST /api/notes/{noteId}/publish)
 	NotesPublishNote(ctx echo.Context, noteId string, params NotesPublishNoteParams) error
@@ -703,6 +712,31 @@ func (w *ServerInterfaceWrapper) NotesUpdateNote(ctx echo.Context) error {
 	return err
 }
 
+// NotesSyncNoteToNotion converts echo context to params.
+func (w *ServerInterfaceWrapper) NotesSyncNoteToNotion(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "noteId" -------------
+	var noteId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "noteId", ctx.Param("noteId"), &noteId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter noteId: %s", err))
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params NotesSyncNoteToNotionParams
+	// ------------- Required query parameter "ownerId" -------------
+
+	err = runtime.BindQueryParameter("form", false, true, "ownerId", ctx.QueryParams(), &params.OwnerId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter ownerId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.NotesSyncNoteToNotion(ctx, noteId, params)
+	return err
+}
+
 // NotesPublishNote converts echo context to params.
 func (w *ServerInterfaceWrapper) NotesPublishNote(ctx echo.Context) error {
 	var err error
@@ -890,6 +924,7 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.DELETE(baseURL+"/api/notes/:noteId", wrapper.NotesDeleteNote)
 	router.GET(baseURL+"/api/notes/:noteId", wrapper.NotesGetNoteById)
 	router.PUT(baseURL+"/api/notes/:noteId", wrapper.NotesUpdateNote)
+	router.POST(baseURL+"/api/notes/:noteId/notion-sync", wrapper.NotesSyncNoteToNotion)
 	router.POST(baseURL+"/api/notes/:noteId/publish", wrapper.NotesPublishNote)
 	router.POST(baseURL+"/api/notes/:noteId/unpublish", wrapper.NotesUnpublishNote)
 	router.GET(baseURL+"/api/templates", wrapper.TemplatesListTemplates)

@@ -70,6 +70,11 @@ func (s *Server) NotesPublishNote(ctx echo.Context, noteId string, params openap
 	return s.note.Publish(ctx, noteId, params)
 }
 
+// NotesSyncNoteToNotion handles POST /api/notes/:noteId/notion-sync.
+func (s *Server) NotesSyncNoteToNotion(ctx echo.Context, noteId string, params openapi.NotesSyncNoteToNotionParams) error { //nolint:revive
+	return s.note.SyncToNotion(ctx, noteId, params)
+}
+
 // NotesUnpublishNote handles POST /api/notes/:noteId/unpublish.
 // NotesUnpublishNote handles POST /api/notes/:id/unpublish.
 func (s *Server) NotesUnpublishNote(ctx echo.Context, noteId string, params openapi.NotesUnpublishNoteParams) error { //nolint:revive

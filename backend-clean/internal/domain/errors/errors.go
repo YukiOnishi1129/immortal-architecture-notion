@@ -42,6 +42,9 @@ var (
 	ErrNotionParentNotSet = errors.New("notion parent page is not set for the template")
 	// ErrInvalidNotionParentURL indicates the supplied Notion page URL is malformed.
 	ErrInvalidNotionParentURL = errors.New("invalid notionParentPageUrl")
+	// ErrNotionSyncNotNeeded indicates the note cannot be synced on demand:
+	// it is not published, or it already has a Notion page.
+	ErrNotionSyncNotNeeded = errors.New("note does not need a manual notion sync")
 	// ErrNotionSyncFailed indicates the Notion API call failed.
 	ErrNotionSyncFailed = errors.New("failed to sync with notion")
 )

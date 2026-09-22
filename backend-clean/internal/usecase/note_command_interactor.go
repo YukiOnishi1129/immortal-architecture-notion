@@ -247,6 +247,62 @@ func (u *NoteCommandInteractor) ChangeStatus(ctx context.Context, input port.Not
 	return u.output.PresentNote(ctx, n)
 }
 
+// SyncToNotion creates the Notion page for a note that is already published.
+//
+// Publishing is what normally triggers the sync, so notes published before the
+// integration existed never got a page. Changing their status to force one
+// would remove them from the list in the meantime, hence this separate action.
+func (u *NoteCommandInteractor) SyncToNotion(ctx context.Context, id, ownerID string) error {
+	current, err := u.notes.Get(ctx, id)
+	if err != nil {
+		return err
+	}
+	if err := note.ValidateNoteOwnership(current.Note.OwnerID, ownerID); err != nil {
+		return err
+	}
+	if !u.notionEnabled() {
+		return domainerr.ErrNotionSyncNotNeeded
+	}
+	// Only a published note without a page qualifies. A draft has nothing to
+	// show yet, and a note that already has one is updated through Update.
+	if current.Note.Status != note.StatusPublish || !syncFromNote(current.Note).IsFirstSync() {
+		return domainerr.ErrNotionSyncNotNeeded
+	}
+
+	parentID, err := u.parentPageID(ctx, current.Note.TemplateID)
+	if err != nil {
+		return err
+	}
+	page, err := u.notion.CreatePage(ctx, parentID, current.Note.Title, toNotionSections(current))
+	if err != nil {
+		return wrapSyncErr(err)
+	}
+	synced := syncedNow(page)
+	synced.created = true
+
+	err = u.tx.WithinTransaction(ctx, func(txCtx context.Context) error {
+		if err := u.notes.SaveNotionPage(txCtx, id,
+			synced.pageID, synced.pageURL, synced.syncedAt); err != nil {
+			return err
+		}
+		updated, err := u.notes.Get(txCtx, id)
+		if err != nil {
+			return err
+		}
+		return u.readModelRepo.Upsert(txCtx, toReadModel(updated))
+	})
+	if err != nil {
+		u.discardCreatedPage(ctx, synced, err)
+		return err
+	}
+
+	n, err := u.notes.Get(ctx, id)
+	if err != nil {
+		return err
+	}
+	return u.output.PresentNote(ctx, n)
+}
+
 // Delete deletes a note and removes the read model.
 func (u *NoteCommandInteractor) Delete(ctx context.Context, id, ownerID string) error {
 	current, err := u.notes.Get(ctx, id)

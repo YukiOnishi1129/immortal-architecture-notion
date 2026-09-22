@@ -74,6 +74,16 @@ interface Notes {
     @query ownerId: string
   ): NoteResponse | NotFoundError | ForbiddenError | BadRequestError | UnauthorizedError;
 
+  /** Notion連携（公開済みノートの手動連携） */
+  @post
+  @route("/{noteId}/notion-sync")
+  @summary("Sync note to Notion")
+  syncNoteToNotion(
+    @path noteId: string,
+    /** 所有者ID（操作権限チェック用） */
+    @query ownerId: string
+  ): NoteResponse | NotFoundError | ForbiddenError | BadRequestError | UnauthorizedError;
+
   /** ノート削除 */
   @delete
   @route("/{noteId}")

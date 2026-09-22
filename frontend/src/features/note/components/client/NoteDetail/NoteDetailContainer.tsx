@@ -17,6 +17,9 @@ export function NoteDetailContainer({
 }: NoteDetailContainerProps) {
   const {
     note,
+    hasNotionParentPage,
+    isSyncingToNotion,
+    handleSyncToNotion,
     isLoading,
     isDeleting,
     isTogglingPublish,
@@ -34,6 +37,9 @@ export function NoteDetailContainer({
   return (
     <NoteDetailPresenter
       note={note}
+      hasNotionParentPage={hasNotionParentPage}
+      isSyncingToNotion={isSyncingToNotion}
+      onSyncToNotion={handleSyncToNotion}
       isLoading={isLoading}
       isDeleting={isDeleting}
       isTogglingPublish={isTogglingPublish}
