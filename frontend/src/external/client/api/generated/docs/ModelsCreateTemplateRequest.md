@@ -10,6 +10,7 @@ Name | Type
 `name` | string
 `ownerId` | string
 `fields` | [Array&lt;ModelsCreateFieldRequest&gt;](ModelsCreateFieldRequest.md)
+`notionParentPageUrl` | string
 
 ## Example
 
@@ -21,6 +22,7 @@ const example = {
   "name": null,
   "ownerId": null,
   "fields": null,
+  "notionParentPageUrl": null,
 } satisfies ModelsCreateTemplateRequest
 
 console.log(example)

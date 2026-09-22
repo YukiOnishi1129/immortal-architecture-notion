@@ -45,6 +45,12 @@ export interface ModelsUpdateTemplateRequest {
      * @memberof ModelsUpdateTemplateRequest
      */
     fields: Array<ModelsUpdateFieldRequest>;
+    /**
+     * Notionの置き場所となる親ページのURL（未設定なら連携しない）
+     * @type {string}
+     * @memberof ModelsUpdateTemplateRequest
+     */
+    notionParentPageUrl?: string;
 }
 
 /**
@@ -70,6 +76,7 @@ export function ModelsUpdateTemplateRequestFromJSONTyped(json: any, ignoreDiscri
         'id': json['id'],
         'name': json['name'],
         'fields': ((json['fields'] as Array<any>).map(ModelsUpdateFieldRequestFromJSON)),
+        'notionParentPageUrl': json['notionParentPageUrl'] == null ? undefined : json['notionParentPageUrl'],
     };
 }
 
@@ -87,6 +94,7 @@ export function ModelsUpdateTemplateRequestToJSONTyped(value?: ModelsUpdateTempl
         'id': value['id'],
         'name': value['name'],
         'fields': ((value['fields'] as Array<any>).map(ModelsUpdateFieldRequestToJSON)),
+        'notionParentPageUrl': value['notionParentPageUrl'],
     };
 }
 

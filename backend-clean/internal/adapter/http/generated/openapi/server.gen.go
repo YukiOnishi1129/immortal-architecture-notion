@@ -186,6 +186,9 @@ type ModelsCreateTemplateRequest struct {
 	// Name テンプレート名
 	Name string `json:"name"`
 
+	// NotionParentPageUrl Notionの置き場所となる親ページのURL（未設定なら連携しない）
+	NotionParentPageUrl *string `json:"notionParentPageUrl,omitempty"`
+
 	// OwnerId 所有者ID
 	OwnerId openapi_types.UUID `json:"ownerId"`
 }
@@ -258,6 +261,9 @@ type ModelsNoteResponse struct {
 	// Id ノートID
 	Id string `json:"id"`
 
+	// NotionPageUrl 連携済みNotionページのURL（未連携なら未設定）
+	NotionPageUrl *string `json:"notionPageUrl,omitempty"`
+
 	// Owner 所有者情報
 	Owner ModelsAccountSummary `json:"owner"`
 
@@ -322,6 +328,9 @@ type ModelsTemplateResponse struct {
 
 	// Name テンプレート名
 	Name string `json:"name"`
+
+	// NotionParentPageUrl Notionの置き場所となる親ページのURL
+	NotionParentPageUrl *string `json:"notionParentPageUrl,omitempty"`
 
 	// Owner 所有者情報
 	Owner ModelsAccountSummary `json:"owner"`
@@ -388,6 +397,9 @@ type ModelsUpdateTemplateRequest struct {
 
 	// Name テンプレート名
 	Name string `json:"name"`
+
+	// NotionParentPageUrl Notionの置き場所となる親ページのURL（未設定なら連携しない）
+	NotionParentPageUrl *string `json:"notionParentPageUrl,omitempty"`
 }
 
 // AccountsGetAccountByEmailParams defines parameters for AccountsGetAccountByEmail.

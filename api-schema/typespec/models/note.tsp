@@ -115,6 +115,9 @@ model NoteResponse {
 
   /** 更新日時 */
   updatedAt: utcDateTime;
+
+  /** 連携済みNotionページのURL（未連携なら未設定） */
+  notionPageUrl?: string;
 }
 
 /** ノートフィルター（クエリパラメータ） */

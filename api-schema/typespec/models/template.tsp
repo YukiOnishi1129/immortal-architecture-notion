@@ -50,6 +50,9 @@ model CreateTemplateRequest {
 
   /** フィールド一覧 */
   fields: CreateFieldRequest[];
+
+  /** Notionの置き場所となる親ページのURL（未設定なら連携しない） */
+  notionParentPageUrl?: string;
 }
 
 /** テンプレート更新リクエスト */
@@ -64,6 +67,9 @@ model UpdateTemplateRequest {
 
   /** フィールド一覧 */
   fields: UpdateFieldRequest[];
+
+  /** Notionの置き場所となる親ページのURL（未設定なら連携しない） */
+  notionParentPageUrl?: string;
 }
 
 /** フィールド更新リクエスト */
@@ -105,4 +111,7 @@ model TemplateResponse {
 
   /** 使用中フラグ */
   isUsed: boolean;
+
+  /** Notionの置き場所となる親ページのURL */
+  notionParentPageUrl?: string;
 }
