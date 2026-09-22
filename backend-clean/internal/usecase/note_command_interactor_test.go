@@ -52,10 +52,12 @@ func templateWithUsage() *template.WithUsage {
 }
 
 // runInTx makes the TxManager mock execute the callback inline.
+// The caller's context is passed through, matching the real TxManager
+// which derives txCtx from ctx.
 func runInTx(tx *mockusecase.MockTxManager) {
 	tx.EXPECT().WithinTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(_ context.Context, fn func(context.Context) error) error {
-			return fn(context.Background())
+		func(ctx context.Context, fn func(context.Context) error) error {
+			return fn(ctx)
 		},
 	)
 }
@@ -169,13 +171,17 @@ func TestNoteCommandInteractor_Create(t *testing.T) {
 
 func TestNoteCommandInteractor_Update(t *testing.T) {
 	tests := []struct {
-		name      string
-		input     port.NoteUpdateInput
-		current   *note.WithMeta
-		getErr    error
-		updateErr error
-		wantError error
-		expectTx  bool
+		name          string
+		input         port.NoteUpdateInput
+		current       *note.WithMeta
+		getErr        error
+		updateErr     error
+		tpl           *template.WithUsage
+		tplErr        error
+		replaceErr    error
+		wantError     error
+		expectTx      bool
+		expectReplace bool // ReplaceSections まで到達するか
 	}{
 		{
 			name: "[Success] update title only",
@@ -219,6 +225,88 @@ func TestNoteCommandInteractor_Update(t *testing.T) {
 			wantError: errors.New("db error"),
 			expectTx:  true,
 		},
+		{
+			name: "[Success] update title and sections",
+			input: port.NoteUpdateInput{
+				ID: "note-1", Title: "New Title", OwnerID: "owner-1",
+				Sections: []port.SectionUpdateInput{
+					{SectionID: "sec-1", Content: "updated"},
+				},
+			},
+			current:       noteWithMeta("note-1", "owner-1", note.StatusDraft),
+			tpl:           templateWithUsage(),
+			expectTx:      true,
+			expectReplace: true,
+		},
+		{
+			name: "[Fail] template not found while updating sections",
+			input: port.NoteUpdateInput{
+				ID: "note-1", Title: "New Title", OwnerID: "owner-1",
+				Sections: []port.SectionUpdateInput{
+					{SectionID: "sec-1", Content: "updated"},
+				},
+			},
+			current:   noteWithMeta("note-1", "owner-1", note.StatusDraft),
+			tplErr:    domainerr.ErrNotFound,
+			wantError: domainerr.ErrNotFound,
+			expectTx:  true,
+		},
+		{
+			name: "[Fail] unknown section id",
+			input: port.NoteUpdateInput{
+				ID: "note-1", Title: "New Title", OwnerID: "owner-1",
+				Sections: []port.SectionUpdateInput{
+					{SectionID: "unknown-section", Content: "updated"},
+				},
+			},
+			current:   noteWithMeta("note-1", "owner-1", note.StatusDraft),
+			tpl:       templateWithUsage(),
+			wantError: domainerr.ErrSectionsMissing,
+			expectTx:  true,
+		},
+		{
+			// 現状の仕様: ValidateSections は Content == "" のみを空と判定する
+			// （TrimSpace しないため、空白文字列は通る）
+			name: "[Success] whitespace content passes validation",
+			input: port.NoteUpdateInput{
+				ID: "note-1", Title: "New Title", OwnerID: "owner-1",
+				Sections: []port.SectionUpdateInput{
+					{SectionID: "sec-1", Content: "   "},
+				},
+			},
+			current:       noteWithMeta("note-1", "owner-1", note.StatusDraft),
+			tpl:           templateWithUsage(),
+			expectTx:      true,
+			expectReplace: true,
+		},
+		{
+			name: "[Fail] required section is empty",
+			input: port.NoteUpdateInput{
+				ID: "note-1", Title: "New Title", OwnerID: "owner-1",
+				Sections: []port.SectionUpdateInput{
+					{SectionID: "sec-1", Content: ""},
+				},
+			},
+			current:   noteWithMeta("note-1", "owner-1", note.StatusDraft),
+			tpl:       templateWithUsage(),
+			wantError: domainerr.ErrRequiredFieldEmpty,
+			expectTx:  true,
+		},
+		{
+			name: "[Fail] replace sections error",
+			input: port.NoteUpdateInput{
+				ID: "note-1", Title: "New Title", OwnerID: "owner-1",
+				Sections: []port.SectionUpdateInput{
+					{SectionID: "sec-1", Content: "updated"},
+				},
+			},
+			current:       noteWithMeta("note-1", "owner-1", note.StatusDraft),
+			tpl:           templateWithUsage(),
+			replaceErr:    errors.New("replace error"),
+			wantError:     errors.New("replace error"),
+			expectTx:      true,
+			expectReplace: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -239,7 +327,18 @@ func TestNoteCommandInteractor_Update(t *testing.T) {
 				notes.EXPECT().Update(gomock.Any(), gomock.Any()).
 					Return(&tt.current.Note, tt.updateErr)
 
-				if tt.updateErr == nil {
+				if tt.updateErr == nil && tt.input.Sections != nil {
+					templates.EXPECT().Get(gomock.Any(), tt.current.Note.TemplateID).
+						Return(tt.tpl, tt.tplErr)
+
+					if tt.expectReplace {
+						notes.EXPECT().ReplaceSections(gomock.Any(), tt.input.ID, gomock.Any()).
+							Return(tt.replaceErr)
+					}
+				}
+
+				// the read model is synced only when everything above succeeded
+				if tt.wantError == nil && tt.updateErr == nil {
 					// once inside the transaction for the read model, once after it
 					notes.EXPECT().Get(gomock.Any(), tt.input.ID).Return(tt.current, nil).Times(2)
 					readModels.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(nil)
