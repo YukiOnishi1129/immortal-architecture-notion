@@ -13,7 +13,7 @@
    → AIが勝手に決める → 意図と違うものができる → 手直しで2時間
 
 ✅ 設計してから投げる
-   「04_work_breakdown.md の PR⑤ を実装して」
+   「04_work_breakdown.md の PR4 を実装して」
    → 一発で意図どおり → レビュー20分
 ```
 
@@ -46,12 +46,12 @@
 
 ## Step 2. PR単位で投げる
 
-**一度に全部投げないこと。** PR④の作業中にPR⑥の話をすると混乱します。
+**一度に全部投げないこと。** PR3の作業中にPR5の話をすると混乱します。
 
-### PR⓪ 既存テストの追加
+### PR0 既存テストの追加
 
 ```
-04_work_breakdown.md の PR⓪ を実装してください。
+04_work_breakdown.md の PR0 を実装してください。
 
 【作るもの】
 backend-clean/internal/usecase/note_command_interactor_test.go
@@ -78,10 +78,10 @@ internal/usecase/template_interactor_test.go と同じ形式で、gomock を使�
 usecase のカバレッジを 37.2% から 70%以上へ
 ```
 
-### PR① マイグレーション
+### PR1-a マイグレーション
 
 ```
-04_work_breakdown.md の PR① を実装してください。
+04_work_breakdown.md の PR1-a を実装してください。
 
 【作るもの】
 backend-clean/migrations/ に up と down のSQLファイル
@@ -98,10 +98,44 @@ backend-clean/migrations/ に up と down のSQLファイル
 make sqlc-generate を実行し、生成物も一緒にコミット対象にする
 ```
 
-### PR② ドメイン層
+### PR1-b API定義
 
 ```
-04_work_breakdown.md の PR② を実装してください。
+04_work_breakdown.md の PR1-b を実装してください。
+
+【変更するもの】
+- api-schema/typespec/models/template.tsp
+- api-schema/typespec/models/note.tsp
+
+【追加するフィールド】
+TemplateResponse / CreateTemplateRequest / UpdateTemplateRequest
+  + notionParentPageUrl
+
+NoteResponse
+  + notionPageUrl
+
+【🚨 制約】
+すべて optional にしてください。
+必須にすると、実装が追いつくまで既存のクライアントが壊れます。
+
+【生成の順序】
+1. typespec を編集
+2. api-schema で pnpm openapi   → openapi.yaml
+3. backend-clean で make oapi   → Goの型
+4. frontend で pnpm openapi     → TSの型
+
+生成物はすべてコミットしてください。
+再生成しても差分が出ないことを確認してください。
+
+【このPRの目的】
+先に契約を確定させることで、バックエンドとフロントを並行して書けるようにします。
+実装はまだ入れません。
+```
+
+### PR2-a ドメイン層
+
+```
+04_work_breakdown.md の PR2-a を実装してください。
 
 【作るもの】
 backend-clean/internal/domain/notion/ に entity.go, logic.go, logic_test.go
@@ -122,10 +156,10 @@ internal/domain/note/logic.go の書き方に揃える
 internal/domain/note/logic_test.go と同じテーブル駆動テスト形式。カバレッジ90%以上
 ```
 
-### PR③ Notion APIクライアント
+### PR2-b Notion APIクライアント
 
 ```
-04_work_breakdown.md の PR③ を実装してください。
+04_work_breakdown.md の PR2-b を実装してください。
 
 【作るもの】
 - internal/port/notion_port.go
@@ -158,15 +192,16 @@ gateway/db/ が DB を担うのと同じ位置づけです。
                 500 / タイムアウト / 壊れたJSON
 ```
 
-### PR④ リポジトリ + 親ページURLの設定
+### PR3 リポジトリ + 親ページURLの設定
 
 ```
-04_work_breakdown.md の PR④ を実装してください。
+04_work_breakdown.md の PR3 を実装してください。
 
 【作るもの】
 - note_repository.go … page_id の読み書きを追加
 - template_repository.go … 親ページIDの読み書きを追加
 - template_interactor.go … URLからIDを抽出する処理
+- template_controller.go / presenter … API定義（PR1-b）に実装を合わせる
 
 【URLからIDを抽出する】
 https://notion.so/workspace/1429989fe8ac4effbc8f57f56486db54?v=...
@@ -178,18 +213,27 @@ https://notion.so/workspace/1429989fe8ac4effbc8f57f56486db54?v=...
 このPRでは、まだ公開処理に連携を組み込みません。
 
 【確認】
-PR⓪で追加したテストが全てパスすること
+PR0で追加したテストが全てパスすること
 ```
 
-### PR⑤ ChangeStatus / Update への組み込み
+### PR4 ChangeStatus / Update への組み込み
 
 ```
-04_work_breakdown.md の PR⑤ を実装してください。
+04_work_breakdown.md の PR4 を実装してください。
 
 【変更するファイル】
 - internal/usecase/note_command_interactor.go  ← 既存を変更
+- internal/domain/note/read_model.go … NotionPageURL を追加
+- internal/usecase/note_command_interactor.go の toReadModel() … コピー処理
+- internal/adapter/gateway/db/sqlc/note_read_model_repository.go
+- internal/adapter/http/presenter/note_helpers.go … レスポンス変換
 - internal/driver/config/config.go
 - internal/driver/initializer/api/initializer.go
+
+【🚨 CQRS の注意】
+このアプリは画面が note_read_models しか読みません。
+notes に値を入れても、toReadModel() でコピーしないと画面に出ません。
+コピー漏れはコンパイルが通るため、テストで検出してください。
 
 【🚨 制約1: 呼び出し順序】
 Notionを先に呼び、成功したらDBを更新してください。
@@ -231,7 +275,7 @@ config.go で必須チェックにしないこと。
   - 公開中のノート: 先にNotionを更新し、成功したらDBを更新
 
 【🚨 確認必須】
-PR⓪で追加した既存テストが全てパスすること。
+PR0で追加した既存テストが全てパスすること。
 1つでも落ちたら、既存の振る舞いを壊しています。
 ```
 
