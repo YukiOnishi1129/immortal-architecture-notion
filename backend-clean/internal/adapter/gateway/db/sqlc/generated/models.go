@@ -31,13 +31,16 @@ type Field struct {
 }
 
 type Note struct {
-	ID         pgtype.UUID        `db:"id" json:"id"`
-	Title      string             `db:"title" json:"title"`
-	TemplateID pgtype.UUID        `db:"template_id" json:"template_id"`
-	OwnerID    pgtype.UUID        `db:"owner_id" json:"owner_id"`
-	Status     string             `db:"status" json:"status"`
-	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	UpdatedAt  pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	ID             pgtype.UUID        `db:"id" json:"id"`
+	Title          string             `db:"title" json:"title"`
+	TemplateID     pgtype.UUID        `db:"template_id" json:"template_id"`
+	OwnerID        pgtype.UUID        `db:"owner_id" json:"owner_id"`
+	Status         string             `db:"status" json:"status"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	NotionPageID   pgtype.Text        `db:"notion_page_id" json:"notion_page_id"`
+	NotionPageUrl  pgtype.Text        `db:"notion_page_url" json:"notion_page_url"`
+	NotionSyncedAt pgtype.Timestamptz `db:"notion_synced_at" json:"notion_synced_at"`
 }
 
 type NoteReadModel struct {
@@ -53,6 +56,7 @@ type NoteReadModel struct {
 	SectionsJson   []byte             `db:"sections_json" json:"sections_json"`
 	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	NotionPageUrl  pgtype.Text        `db:"notion_page_url" json:"notion_page_url"`
 }
 
 type Section struct {
@@ -63,8 +67,9 @@ type Section struct {
 }
 
 type Template struct {
-	ID        pgtype.UUID        `db:"id" json:"id"`
-	Name      string             `db:"name" json:"name"`
-	OwnerID   pgtype.UUID        `db:"owner_id" json:"owner_id"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	ID                 pgtype.UUID        `db:"id" json:"id"`
+	Name               string             `db:"name" json:"name"`
+	OwnerID            pgtype.UUID        `db:"owner_id" json:"owner_id"`
+	UpdatedAt          pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	NotionParentPageID pgtype.Text        `db:"notion_parent_page_id" json:"notion_parent_page_id"`
 }

@@ -22,7 +22,7 @@ func (q *Queries) DeleteNoteReadModel(ctx context.Context, id pgtype.UUID) error
 }
 
 const getNoteReadModel = `-- name: GetNoteReadModel :one
-SELECT id, title, status, template_id, template_name, owner_id, owner_first_name, owner_last_name, owner_thumbnail, sections_json, created_at, updated_at
+SELECT id, title, status, template_id, template_name, owner_id, owner_first_name, owner_last_name, owner_thumbnail, sections_json, created_at, updated_at, notion_page_url
 FROM note_read_models
 WHERE id = $1
 `
@@ -43,12 +43,13 @@ func (q *Queries) GetNoteReadModel(ctx context.Context, id pgtype.UUID) (*NoteRe
 		&i.SectionsJson,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.NotionPageUrl,
 	)
 	return &i, err
 }
 
 const listNoteReadModels = `-- name: ListNoteReadModels :many
-SELECT id, title, status, template_id, template_name, owner_id, owner_first_name, owner_last_name, owner_thumbnail, sections_json, created_at, updated_at
+SELECT id, title, status, template_id, template_name, owner_id, owner_first_name, owner_last_name, owner_thumbnail, sections_json, created_at, updated_at, notion_page_url
 FROM note_read_models
 WHERE (NULLIF($1::text, '') IS NULL OR status = $1)
   AND ($2::uuid IS NULL OR template_id = $2)
@@ -91,6 +92,7 @@ func (q *Queries) ListNoteReadModels(ctx context.Context, arg *ListNoteReadModel
 			&i.SectionsJson,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.NotionPageUrl,
 		); err != nil {
 			return nil, err
 		}

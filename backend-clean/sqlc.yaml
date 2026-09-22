@@ -4,6 +4,7 @@ sql:
     schema:
       - "migrations/20250209000000_init_schema.up.sql"
       - "migrations/20250210000000_add_note_read_models.up.sql"
+      - "migrations/20250211000000_add_notion_columns.up.sql"
     queries: "internal/adapter/gateway/db/sqlc/queries"
     gen:
       go:

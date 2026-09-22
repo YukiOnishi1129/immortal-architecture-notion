@@ -61,29 +61,41 @@ func (m *templateRow) Scan(dest ...interface{}) error {
 		return m.err
 	}
 	switch len(dest) {
-	case 5: // Field
-		if m.fieldRow == nil {
-			return errors.New("fieldRow is nil")
+	// Template と Field はどちらも 5 列になるため、列数だけでは判別できない。
+	// テストがセットした行データで振り分ける。
+	case 5:
+		switch {
+		case m.fieldRow != nil && m.templateRow != nil:
+			// どちらを期待しているか決められないため、テスト側の設定ミスとして落とす。
+			return errors.New("ambiguous 5-column scan: both fieldRow and templateRow are set")
+		case m.fieldRow != nil:
+			setUUID(dest[0], m.fieldRow.ID)
+			setUUID(dest[1], m.fieldRow.TemplateID)
+			setString(dest[2], m.fieldRow.Label)
+			setInt32Field(dest[3], m.fieldRow.Order)
+			setBool(dest[4], m.fieldRow.IsRequired)
+		case m.templateRow != nil:
+			setUUID(dest[0], m.templateRow.ID)
+			setString(dest[1], m.templateRow.Name)
+			setUUID(dest[2], m.templateRow.OwnerID)
+			setTimestamptz(dest[3], m.templateRow.UpdatedAt)
+			setText(dest[4], m.templateRow.NotionParentPageID)
+		default:
+			return errors.New("fieldRow and templateRow are nil")
 		}
-		setUUID(dest[0], m.fieldRow.ID)
-		setUUID(dest[1], m.fieldRow.TemplateID)
-		setString(dest[2], m.fieldRow.Label)
-		setInt32Field(dest[3], m.fieldRow.Order)
-		setBool(dest[4], m.fieldRow.IsRequired)
-	case 4: // Template
-		setUUID(dest[0], m.templateRow.ID)
-		setString(dest[1], m.templateRow.Name)
-		setUUID(dest[2], m.templateRow.OwnerID)
-		setTimestamptz(dest[3], m.templateRow.UpdatedAt)
-	case 8: // GetTemplateByIDRow
+	case 9: // GetTemplateByIDRow
+		if m.detailRow == nil {
+			return errors.New("detailRow is nil")
+		}
 		setUUID(dest[0], m.detailRow.ID)
 		setString(dest[1], m.detailRow.Name)
 		setUUID(dest[2], m.detailRow.OwnerID)
 		setTimestamptz(dest[3], m.detailRow.UpdatedAt)
-		setString(dest[4], m.detailRow.OwnerFirstName)
-		setString(dest[5], m.detailRow.OwnerLastName)
-		setText(dest[6], m.detailRow.OwnerThumbnail)
-		setBool(dest[7], m.detailRow.IsUsed)
+		setText(dest[4], m.detailRow.NotionParentPageID)
+		setString(dest[5], m.detailRow.OwnerFirstName)
+		setString(dest[6], m.detailRow.OwnerLastName)
+		setText(dest[7], m.detailRow.OwnerThumbnail)
+		setBool(dest[8], m.detailRow.IsUsed)
 	default:
 		return errors.New("unexpected scan args")
 	}

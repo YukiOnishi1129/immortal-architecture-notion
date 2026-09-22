@@ -82,7 +82,7 @@ func (m *noteRow) Scan(dest ...interface{}) error {
 		return m.err
 	}
 	switch len(dest) {
-	case 11:
+	case 14:
 		if m.getRow == nil {
 			return errors.New("getRow is nil")
 		}
@@ -93,12 +93,15 @@ func (m *noteRow) Scan(dest ...interface{}) error {
 		setString(dest[4], m.getRow.Status)
 		setTimestamptz(dest[5], m.getRow.CreatedAt)
 		setTimestamptz(dest[6], m.getRow.UpdatedAt)
-		setString(dest[7], m.getRow.TemplateName)
-		setString(dest[8], m.getRow.FirstName)
-		setString(dest[9], m.getRow.LastName)
-		setText(dest[10], m.getRow.OwnerThumbnail)
+		setText(dest[7], m.getRow.NotionPageID)
+		setText(dest[8], m.getRow.NotionPageUrl)
+		setTimestamptz(dest[9], m.getRow.NotionSyncedAt)
+		setString(dest[10], m.getRow.TemplateName)
+		setString(dest[11], m.getRow.FirstName)
+		setString(dest[12], m.getRow.LastName)
+		setText(dest[13], m.getRow.OwnerThumbnail)
 		return nil
-	case 7:
+	case 10:
 		if m.row == nil {
 			return errors.New("row is nil")
 		}
@@ -109,6 +112,9 @@ func (m *noteRow) Scan(dest ...interface{}) error {
 		setString(dest[4], m.row.Status)
 		setTimestamptz(dest[5], m.row.CreatedAt)
 		setTimestamptz(dest[6], m.row.UpdatedAt)
+		setText(dest[7], m.row.NotionPageID)
+		setText(dest[8], m.row.NotionPageUrl)
+		setTimestamptz(dest[9], m.row.NotionSyncedAt)
 		return nil
 	case 4:
 		if m.secRow == nil {
@@ -147,7 +153,7 @@ func (r *noteRows) Scan(dest ...interface{}) error {
 		return errors.New("scan called out of range")
 	}
 	item := r.items[r.idx-1]
-	if len(dest) != 11 {
+	if len(dest) != 14 {
 		return errors.New("unexpected scan args")
 	}
 	setUUID(dest[0], item.ID)
@@ -157,10 +163,13 @@ func (r *noteRows) Scan(dest ...interface{}) error {
 	setString(dest[4], item.Status)
 	setTimestamptz(dest[5], item.CreatedAt)
 	setTimestamptz(dest[6], item.UpdatedAt)
-	setString(dest[7], item.TemplateName)
-	setString(dest[8], item.FirstName)
-	setString(dest[9], item.LastName)
-	setText(dest[10], item.OwnerThumbnail)
+	setText(dest[7], item.NotionPageID)
+	setText(dest[8], item.NotionPageUrl)
+	setTimestamptz(dest[9], item.NotionSyncedAt)
+	setString(dest[10], item.TemplateName)
+	setString(dest[11], item.FirstName)
+	setString(dest[12], item.LastName)
+	setText(dest[13], item.OwnerThumbnail)
 	return nil
 }
 func (r *noteRows) Conn() *pgx.Conn { return nil }
