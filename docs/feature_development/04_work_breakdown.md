@@ -38,30 +38,58 @@
 
 ---
 
-## PR分割案（7本）
+## PR分割案（9本）
 
 ```mermaid
 flowchart TD
-    PR0["PR⓪ 既存テストの追加<br/>（安全網を先に張る）"]
-    PR1["PR① DBマイグレーション"]
-    PR2["PR② ドメイン層"]
-    PR3["PR③ Notion APIクライアント"]
-    PR4["PR④ リポジトリ + 親ページURLの設定"]
-    PR5["PR⑤ ChangeStatus / Update への組み込み<br/>⚡ ここで機能が動く"]
-    PR6["PR⑥ フロントエンド"]
+    PR0["PR0 既存テストの追加<br/>（安全網を先に張る）"]
+    PR1a["PR1-a DBマイグレーション"]
+    PR1b["PR1-b API定義（typespec）<br/>← 契約を先に確定させる"]
+    PR2a["PR2-a ドメイン層"]
+    PR2b["PR2-b Notion APIクライアント"]
+    PR3["PR3 リポジトリ + 親ページURLの保存"]
+    PR4["PR4 ChangeStatus / Update への組み込み<br/>⚡ ここで機能が動く"]
+    PR5a["PR5-a フロント: テンプレート編集画面"]
+    PR5b["PR5-b フロント: ノート詳細画面"]
 
-    PR0 --> PR1
-    PR1 --> PR2
-    PR1 --> PR3
-    PR2 --> PR4
+    PR0 --> PR1a
+    PR1a --> PR2a
+    PR1a --> PR2b
+    PR1b --> PR3
+    PR1b --> PR5a
+    PR1b --> PR5b
+    PR2a --> PR3
+    PR2b --> PR3
     PR3 --> PR4
-    PR4 --> PR5
-    PR5 --> PR6
 ```
 
-PR② と PR③ は並行して進められます。
+**同じ番号は並行できます。**
 
-### PR⓪ 既存テストの追加 ⚠️
+```
+PR1-a と PR1-b … DBとAPI定義は無関係
+PR2-a と PR2-b … ドメインとクライアント
+PR5-a と PR5-b … 画面が別
+```
+
+**PR1-b（API定義）を先に出すのがポイントです。**
+型が確定すれば、バックエンド（PR3-4）とフロント（PR5-a/b）を**同時に書けます**。
+フロントは生成された型を使うだけなので、バックエンドの完成を待ちません。
+
+**PR1-b（API定義）を先に出すのがポイントです。**
+型が確定すれば、バックエンドとフロントを**同時に書けます**。
+
+```
+並行できるもの
+  PR1-a と PR1-b     … DBとAPI定義は無関係
+  PR2-a と PR2-b       … ドメインとクライアント
+  PR3⑤ と PR5-a/b … バックエンド実装とフロント実装
+```
+
+フロントは生成された型を使うだけなので、**バックエンドの完成を待ちません**。
+（動作確認だけは後回しになります）
+
+
+### PR0 既存テストの追加 ⚠️
 
 ```
 目的: これから変更するコードに安全網を張る
@@ -69,7 +97,7 @@ PR② と PR③ は並行して進められます。
 ```
 
 第2章のとおり `NoteCommandInteractor` にはテストがありません。
-PR⑤でこのファイルを変更するので、**先に現状の振る舞いを固定**します。
+PR4でこのファイルを変更するので、**先に現状の振る舞いを固定**します。
 
 ```
 □ ChangeStatus: Draft⇄Publish、権限エラー、不正な遷移、ReadModel更新
@@ -85,9 +113,9 @@ PR⑤でこのファイルを変更するので、**先に現状の振る舞い�
 ```
 
 > これは「ついでの改善」ではなく、**今回変更するコードの安全確保**です。
-> 別チケットにすると、PR⑤で無防備な変更をすることになります。
+> 別チケットにすると、PR4で無防備な変更をすることになります。
 
-### PR① DBマイグレーション
+### PR1-a DBマイグレーション
 
 ```
 変更: migrations/ に up/down 2ファイル（+40行）
@@ -106,11 +134,54 @@ ALTER TABLE notes      … notion_page_id / url / synced_at を追加（NULL許�
 □ sqlc generate の生成物をコミット
 ```
 
-### PR② ドメイン層
+### PR1-b API定義（typespec）
+
+```
+変更: api-schema/typespec/ と 3箇所の生成物（+80行）
+依存: なし（PR1-aと並行可）
+```
+
+**先に契約を確定させます。** これが出れば、バックエンドとフロントが同時に書けます。
+
+```
+template.tsp
+  TemplateResponse       + notionParentPageUrl（optional）
+  CreateTemplateRequest  + notionParentPageUrl（optional）
+  UpdateTemplateRequest  + notionParentPageUrl（optional）
+
+note.tsp
+  NoteResponse           + notionPageUrl（optional）
+```
+
+**すべて optional にします。** 必須にすると、実装が追いつくまで既存のクライアントが壊れます。
+
+**生成の順序**
+
+```
+1. typespec を編集
+2. api-schema で pnpm openapi   → openapi.yaml
+3. backend-clean で make oapi   → Goの型
+4. frontend で pnpm openapi     → TSの型
+```
+
+**受け入れ基準**
+
+```
+□ 3つの生成物がすべてコミットされている
+□ 再生成しても差分が出ない
+□ 追加したフィールドがすべて optional
+□ 既存のビルドとテストが通る（型が増えただけなので壊れないはず）
+```
+
+> **なぜ先に出すのか**
+> API定義が後回しだと、フロントは型が無いので着手できません。
+> 先に確定させれば、**中身が空のままでも画面を書き始められます**。
+
+### PR2-a ドメイン層
 
 ```
 変更: internal/domain/notion/ を新規作成（+150行）
-依存: なし（PR①と並行可）
+依存: なし（PR1-aと並行可）
 ```
 
 ```go
@@ -130,7 +201,7 @@ func (s *Sync) IsFirstSync() bool { return s == nil || s.NotionPageID == nil }
 □ 既存コードから一切参照されていない（＝影響ゼロ）
 ```
 
-### PR③ Notion APIクライアント
+### PR2-b Notion APIクライアント
 
 ```
 変更: internal/adapter/gateway/externalapi/notion/ を新規作成（+250行）
@@ -146,58 +217,90 @@ func (s *Sync) IsFirstSync() bool { return s == nil || s.NotionPageID == nil }
 □ APIキーがログに出ない
 ```
 
-### PR④ リポジトリ + 親ページURLの設定
+### PR3 リポジトリ + 親ページURLの保存
 
 ```
-変更: gateway/db とテンプレート編集まわり（+200行）
-依存: PR①②③
+変更: gateway/db, template_interactor, controller（+200行）
+依存: PR1-b②③
 ```
 
-テンプレート編集画面でNotionのURLを貼ると、32文字のIDを抽出して保存します。
+PR1-b で確定したAPIに、バックエンドの実装を入れます。
+テンプレート編集でNotionのURLを受け取り、32文字のIDを抽出して保存します。
 
 **受け入れ基準**
 
 ```
 □ テンプレートに親ページURLを設定できる
 □ URLからIDが正しく抽出される（ハイフン有無の両方）
-□ 既存コードの振る舞いは変わっていない（PR⓪のテストが通る）
+□ レスポンスに notionParentPageUrl が返る
+□ 既存コードの振る舞いは変わっていない（PR0のテストが通る）
 ```
 
-> **PR⑤より先に設定できるようにする**
+> **PR4より先に設定できるようにする**
 > 順序が逆だと、リリース前の移行作業ができません。
 
-### PR⑤ ChangeStatus / Update への組み込み ⚡
+### PR4 ChangeStatus / Update への組み込み ⚡
 
 ```
-変更: note_command_interactor.go, config.go, initializer.go（+250行）
-依存: PR④
+変更: note_command_interactor.go, ReadModel まわり,
+      config.go, initializer.go（+280行）
+依存: PR3
 ```
 
 **⚡ このPRで機能が動き出します。同時に、最もリスクが高いPRです。**
 
+**ReadModel 側も通します**（CQRSなので、ここを忘れると画面に出ません）。
+
+```
+note.ReadModel 構造体          … NotionPageURL を追加
+toReadModel()                  … コピー処理を1行追加  ← 忘れやすい
+note_read_model_repository.go  … SELECT / UPSERT に追加
+readModelToResponse()          … レスポンスへの変換
+```
+
 **受け入れ基準**
 
 ```
-□ 🚨 PR⓪で追加した既存テストが全てパスする（デグレなし）
+□ 🚨 PR0で追加した既存テストが全てパスする（デグレなし）
 □ 🚨 トランザクションの中でNotion APIを呼んでいない
 □ 🚨 Notionを先に呼び、成功後にDBを更新している
+□ 🚨 toReadModel() でコピーされ、APIレスポンスに notionPageUrl が出る
 □ QA-01〜04（正常系）が通る
 □ QA-20（Notion失敗時に公開されない）が通る
 □ QA-22（設定未投入でも起動する）が通る
 □ QA-30b（親ページ未設定でAPIがエラー）が通る
 ```
 
-### PR⑥ フロントエンド
+### PR5-a フロント: テンプレート編集画面
 
 ```
-変更: frontend/src/features/note/ と template/（+300行）
-依存: PR⑤
+変更: frontend/src/features/template/（+120行）
+依存: PR1-b のみ（バックエンド実装を待たない）
 ```
 
 ```
-- テンプレート編集画面に親ページURLの入力欄
-- ノート詳細に「Notionで開く」リンク（公開中のみ）
+- テンプレート編集画面に「NotionのURL」入力欄
+- 保存時にAPIへ送る
+```
+
+**受け入れ基準**
+
+```
+□ URL欄が表示され、入力・保存できる
+□ 未入力でも保存できる（optional）
+```
+
+### PR5-b フロント: ノート詳細画面
+
+```
+変更: frontend/src/features/note/（+180行）
+依存: PR1-b のみ（バックエンド実装を待たない）
+```
+
+```
+- 「Notionで開く」リンク（公開中 かつ notionPageUrl がある場合）
 - 親ページ未設定なら公開ボタンを非活性にし、理由を表示
+- 公開/非公開の失敗時にエラー表示
 - 公開済み & 未連携のノートに「連携する」ボタン
 ```
 
@@ -208,23 +311,28 @@ func (s *Sync) IsFirstSync() bool { return s == nil || s.NotionPageID == nil }
 □ QA-23（公開済み未連携のノートにボタンが出る）
 □ QA-34（処理中はボタンが無効化される）
 □ 公開失敗時にエラー内容が表示される
+□ notionPageUrl が無いときリンクを出さない（既存データ対応）
 ```
 
----
+> **バックエンドを待たずに書けます**
+> PR1-b で型が確定しているので、レスポンスに値が入る前から画面を作れます。
+> 動作確認だけ PR4 のマージ後になります。
 
 ## PR一覧
 
 | PR | 内容 | 行数 | 依存 | リスク | レビュー重点 |
 |:---:|---|---:|:---:|:---:|---|
-| ⓪ | 既存テスト追加 | ~250 | - | 🟢 ゼロ | カバレッジが上がったか |
-| ① | マイグレーション | ~40 | - | 🟢 低 | NULL許容、sqlc再生成 |
-| ② | ドメイン層 | ~150 | - | 🟢 ゼロ | 依存の方向 |
-| ③ | Notionクライアント | ~250 | ② | 🟢 ゼロ | タイムアウト、リトライ |
-| ④ | リポジトリ+親ページ設定 | ~200 | ①②③ | 🟡 中 | テンプレート編集への影響 |
-| ⑤ | **既存メソッドへの組み込み** | ~250 | ④ | 🔴 **高** | **PR⓪のテストが通るか** |
-| ⑥ | フロントエンド | ~300 | ⑤ | 🟡 中 | 非活性、二重送信防止 |
+| 0 | 既存テスト追加 | ~250 | - | 🟢 ゼロ | カバレッジが上がったか |
+| 1-a | マイグレーション | ~40 | 0 | 🟢 低 | NULL許容、sqlc再生成 |
+| 1-b | **API定義（typespec）** | ~80 | - | 🟢 低 | **すべて optional か** |
+| 2-a | ドメイン層 | ~150 | 1-a | 🟢 ゼロ | 依存の方向 |
+| 2-b | Notionクライアント | ~250 | 1-a | 🟢 ゼロ | タイムアウト、リトライ |
+| 3 | リポジトリ+親ページ保存 | ~200 | 1-b, 2-a, 2-b | 🟡 中 | テンプレート編集への影響 |
+| 4 | **既存メソッドへの組み込み** | ~280 | 3 | 🔴 **高** | **PR0のテストが通るか** |
+| 5-a | フロント: テンプレート編集 | ~120 | 1-b | 🟢 低 | — |
+| 5-b | フロント: ノート詳細 | ~180 | 1-b | 🟡 中 | 非活性、二重送信防止 |
 
-> **リスクがPR⑤に集中しているのは良い状態です**
+> **リスクがPR4に集中しているのは良い状態です**
 > 「このPRだけ慎重に見ればいい」とわかるからです。
 > 全PRが🟡だと、どこを重点的に見ればいいかわかりません。
 
@@ -232,7 +340,7 @@ func (s *Sync) IsFirstSync() bool { return s == nil || s.NotionPageID == nil }
 
 ## 設定で切り替えられるようにする
 
-PR⑤で既存の公開機能を変更するので、「連携をオフにして従来どおり動かす」手段が要ります。
+PR4で既存の公開機能を変更するので、「連携をオフにして従来どおり動かす」手段が要ります。
 
 ```go
 if cfg.NotionAPIKey == "" {
@@ -255,21 +363,31 @@ if cfg.NotionAPIKey == "" {
 
 ## スケジュール例
 
+**1人でやる場合**
+
 ```
-Day 1  PR⓪ 既存テスト追加
-Day 2  PR① マイグレーション ／ PR② ドメイン層（並行）
-Day 3  PR③ Notionクライアント
-Day 4  PR④ リポジトリ+親ページ設定
-Day 5  PR⑤ 既存メソッドへの組み込み
-Day 6  PR⑥ フロントエンド
+Day 1  PR0    既存テスト
+Day 2  PR1-a  マイグレーション ／ PR1-b  API定義
+Day 3  PR2-a  ドメイン層 ／ PR2-b  Notionクライアント
+Day 4  PR3    リポジトリ+親ページ保存
+Day 5  PR4    既存メソッドへの組み込み
+Day 6  PR5-a / PR5-b  フロント
 Day 7  親ページの設定 → 本物のNotionと繋いで確認
 ```
 
-**クリティカルパス: ⓪ → ① → ④ → ⑤ → ⑥**
+**2人でやる場合**
 
-PR⓪で1日増えますが、PR⑤で壊したときの手戻りより安いです。
+```
+        バックエンド担当              フロント担当
+Day 1   PR0   既存テスト               （待ち）
+Day 2   PR1-a ／ PR1-b API定義   ──┐
+Day 3   PR2-a ／ PR2-b            ├→ PR5-a テンプレート編集
+Day 4   PR3                        │   PR5-b ノート詳細
+Day 5   PR4                      ──┘
+Day 6   結合して確認
+```
 
----
+**PR1-b を Day 2 に出すことで、フロントが3日早く着手できます。**
 
 ## PRテンプレート
 
