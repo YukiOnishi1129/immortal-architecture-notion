@@ -4,6 +4,7 @@ package mockusecase
 import (
 	"context"
 	"reflect"
+	"time"
 
 	"github.com/golang/mock/gomock"
 
@@ -120,6 +121,18 @@ func (m *MockNoteRepository) ReplaceSections(ctx context.Context, noteID string,
 func (mr *MockNoteRepositoryMockRecorder) ReplaceSections(ctx, noteID, sections any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReplaceSections", reflect.TypeOf((*MockNoteRepository)(nil).ReplaceSections), ctx, noteID, sections)
+}
+
+func (m *MockNoteRepository) SaveNotionPage(ctx context.Context, noteID string, pageID, pageURL *string, syncedAt *time.Time) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SaveNotionPage", ctx, noteID, pageID, pageURL, syncedAt)
+	res0, _ := ret[0].(error)
+	return res0
+}
+
+func (mr *MockNoteRepositoryMockRecorder) SaveNotionPage(ctx, noteID, pageID, pageURL, syncedAt any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveNotionPage", reflect.TypeOf((*MockNoteRepository)(nil).SaveNotionPage), ctx, noteID, pageID, pageURL, syncedAt)
 }
 
 // MockNoteReadModelRepository is a mock of port.NoteReadModelRepository.

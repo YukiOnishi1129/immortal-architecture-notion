@@ -4,6 +4,7 @@ package sqlc
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -76,6 +77,10 @@ func (r *NoteRepository) List(ctx context.Context, filters note.Filters) ([]note
 				Status:     note.NoteStatus(row.Status),
 				CreatedAt:  timestamptzToTime(row.CreatedAt),
 				UpdatedAt:  timestamptzToTime(row.UpdatedAt),
+
+				NotionPageID:   textToStringPtr(row.NotionPageID),
+				NotionPageURL:  textToStringPtr(row.NotionPageUrl),
+				NotionSyncedAt: timestamptzToTimePtr(row.NotionSyncedAt),
 			},
 			TemplateName:   row.TemplateName,
 			OwnerFirstName: row.FirstName,
@@ -118,6 +123,10 @@ func (r *NoteRepository) Get(ctx context.Context, id string) (*note.WithMeta, er
 			Status:     note.NoteStatus(row.Status),
 			CreatedAt:  timestamptzToTime(row.CreatedAt),
 			UpdatedAt:  timestamptzToTime(row.UpdatedAt),
+
+			NotionPageID:   textToStringPtr(row.NotionPageID),
+			NotionPageURL:  textToStringPtr(row.NotionPageUrl),
+			NotionSyncedAt: timestamptzToTimePtr(row.NotionSyncedAt),
 		},
 		TemplateName:   row.TemplateName,
 		OwnerFirstName: row.FirstName,
@@ -154,6 +163,10 @@ func (r *NoteRepository) Create(ctx context.Context, n note.Note) (*note.Note, e
 		Status:     note.NoteStatus(row.Status),
 		CreatedAt:  timestamptzToTime(row.CreatedAt),
 		UpdatedAt:  timestamptzToTime(row.UpdatedAt),
+
+		NotionPageID:   textToStringPtr(row.NotionPageID),
+		NotionPageURL:  textToStringPtr(row.NotionPageUrl),
+		NotionSyncedAt: timestamptzToTimePtr(row.NotionSyncedAt),
 	}, nil
 }
 
@@ -181,6 +194,10 @@ func (r *NoteRepository) Update(ctx context.Context, n note.Note) (*note.Note, e
 		Status:     note.NoteStatus(row.Status),
 		CreatedAt:  timestamptzToTime(row.CreatedAt),
 		UpdatedAt:  timestamptzToTime(row.UpdatedAt),
+
+		NotionPageID:   textToStringPtr(row.NotionPageID),
+		NotionPageURL:  textToStringPtr(row.NotionPageUrl),
+		NotionSyncedAt: timestamptzToTimePtr(row.NotionSyncedAt),
 	}, nil
 }
 
@@ -208,6 +225,10 @@ func (r *NoteRepository) UpdateStatus(ctx context.Context, id string, status not
 		Status:     note.NoteStatus(row.Status),
 		CreatedAt:  timestamptzToTime(row.CreatedAt),
 		UpdatedAt:  timestamptzToTime(row.UpdatedAt),
+
+		NotionPageID:   textToStringPtr(row.NotionPageID),
+		NotionPageURL:  textToStringPtr(row.NotionPageUrl),
+		NotionSyncedAt: timestamptzToTimePtr(row.NotionSyncedAt),
 	}, nil
 }
 
@@ -277,4 +298,26 @@ func (r *NoteRepository) listSections(ctx context.Context, noteID pgtype.UUID) (
 		})
 	}
 	return sections, nil
+}
+
+// SaveNotionPage stores the Notion page a note is linked to.
+func (r *NoteRepository) SaveNotionPage(ctx context.Context, noteID string, pageID, pageURL *string, syncedAt *time.Time) error {
+	pgID, err := toUUID(noteID)
+	if err != nil {
+		return err
+	}
+
+	_, err = queriesForContext(ctx, r.queries).UpdateNoteNotionPage(ctx, &generated.UpdateNoteNotionPageParams{
+		ID:             pgID,
+		NotionPageID:   pgNullableText(pageID),
+		NotionPageUrl:  pgNullableText(pageURL),
+		NotionSyncedAt: pgNullableTime(syncedAt),
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domainerr.ErrNotFound
+		}
+		return err
+	}
+	return nil
 }

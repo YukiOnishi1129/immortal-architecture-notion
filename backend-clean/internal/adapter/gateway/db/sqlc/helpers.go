@@ -44,6 +44,25 @@ func nullableTextToString(t pgtype.Text) string {
 	return t.String
 }
 
+// textToStringPtr keeps SQL NULL distinct from an empty string.
+// Used for optional columns the domain models as *string.
+func textToStringPtr(t pgtype.Text) *string {
+	if !t.Valid {
+		return nil
+	}
+	s := t.String
+	return &s
+}
+
+// timestamptzToTimePtr returns nil for SQL NULL rather than the zero time.
+func timestamptzToTimePtr(t pgtype.Timestamptz) *time.Time {
+	if !t.Valid {
+		return nil
+	}
+	v := t.Time
+	return &v
+}
+
 func queriesForContext(ctx context.Context, q *generated.Queries) *generated.Queries {
 	if tx := driverdb.TxFromContext(ctx); tx != nil {
 		return q.WithTx(tx)
