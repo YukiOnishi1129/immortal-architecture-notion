@@ -1,6 +1,6 @@
 "use client";
 
-import { HelpCircle } from "lucide-react";
+import { ExternalLink, HelpCircle } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -11,18 +11,21 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog";
 
+const INTEGRATIONS_URL = "https://www.notion.so/my-integrations";
+
 const STEPS = [
   {
-    title: "Notionでインテグレーションを作る",
-    body: "Notionの「設定」→「コネクト」→「インテグレーションを開発または管理する」から新規作成します。作成後に表示されるトークンを、アプリの環境変数に設定します。",
+    title: "Notionでコネクトを作る",
+    body: "を開き、「New connection」を押して新規作成します。認証方法は「Access token」を選びます。表示された Access token を、アプリの環境変数に設定します。",
+    link: { href: INTEGRATIONS_URL, label: "notion.so/my-integrations" },
   },
   {
     title: "置き場所にするページを用意する",
     body: "ノートを書き出したいページをNotionで作ります。このページの下に、公開したノートが1件ずつ作られます。",
   },
   {
-    title: "そのページをインテグレーションに共有する",
-    body: "ページ右上の「•••」→「コネクト」から、作成したインテグレーションを追加します。この操作を忘れると、トークンが正しくてもページが見つからないエラーになります。",
+    title: "そのページにコネクトを追加する",
+    body: "ページ右上の「•••」メニューから接続（Connections）を開き、作成したコネクトを追加します。この操作を忘れると、トークンが正しくてもページが見つからないエラーになります。",
   },
   {
     title: "ページのURLをテンプレートに設定する",
@@ -69,11 +72,37 @@ export function NotionSetupGuide({ className }: { className?: string }) {
                 </span>
                 <div className="space-y-1">
                   <p className="text-sm font-medium">{step.title}</p>
-                  <p className="text-sm text-muted-foreground">{step.body}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {step.link && (
+                      <a
+                        href={step.link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mr-1 inline-flex items-center gap-0.5 text-blue-600 hover:underline"
+                      >
+                        {step.link.label}
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                    {step.body}
+                  </p>
                 </div>
               </li>
             ))}
           </ol>
+
+          <p className="text-xs text-muted-foreground">
+            Notion側の画面名は変わることがあります。うまく見つからないときは
+            <a
+              href={INTEGRATIONS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mx-1 text-blue-600 hover:underline"
+            >
+              notion.so/my-integrations
+            </a>
+            を開いてください。
+          </p>
         </DialogContent>
       </Dialog>
     </>
