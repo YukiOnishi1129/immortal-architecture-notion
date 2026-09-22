@@ -37,3 +37,22 @@ jobs:
         run: make sqlc
       - name: Build
         run: make build
+
+  # End-to-end tests run against a real PostgreSQL database, so they are kept
+  # in a separate job: they are slower than the unit tests and they need
+  # Docker, which the job above does not.
+  #
+  # The test harness starts and removes the database container itself, so this
+  # runs exactly the same command as a developer does locally.
+  e2e:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend-clean
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.1"
+      - name: Run end-to-end tests
+        run: make test-e2e

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	domainerr "immortal-architecture-notion/backend/internal/domain/errors"
+	"immortal-architecture-notion/backend/internal/domain/note"
 )
 
 // pageIDPattern matches a Notion page id: 32 hex characters,
@@ -60,4 +61,35 @@ func ExtractPageID(rawURL string) (string, error) {
 func ValidateParentPageID(pageID string) error {
 	_, err := ExtractPageID(pageID)
 	return err
+}
+
+// ActionForStatusChange decides what to do on Notion when a note's status
+// changes. The rules come from the design decision table:
+//
+//	Draft -> Publish (first time)  create
+//	Draft -> Publish (again)       restore, because Notion has no hard delete
+//	Publish -> Draft               trash, keeping the page id
+//
+// Restoring instead of re-creating keeps the page id and URL stable.
+func ActionForStatusChange(to note.NoteStatus, sync *Sync) Action {
+	if to == note.StatusPublish {
+		if sync.IsFirstSync() {
+			return ActionCreate
+		}
+		return ActionRestore
+	}
+	if sync.IsFirstSync() {
+		// Never synced, so there is no page to trash.
+		return ActionNone
+	}
+	return ActionTrash
+}
+
+// ActionForEdit decides what to do on Notion when a note's content is edited.
+// Only published notes are mirrored; drafts are not on Notion yet.
+func ActionForEdit(status note.NoteStatus, sync *Sync) Action {
+	if status != note.StatusPublish || sync.IsFirstSync() {
+		return ActionNone
+	}
+	return ActionUpdate
 }
