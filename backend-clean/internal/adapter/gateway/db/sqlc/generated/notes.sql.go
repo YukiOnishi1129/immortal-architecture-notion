@@ -14,7 +14,7 @@ import (
 const createNote = `-- name: CreateNote :one
 INSERT INTO notes (title, template_id, owner_id, status)
 VALUES ($1, $2, $3, $4)
-RETURNING id, title, template_id, owner_id, status, created_at, updated_at
+RETURNING id, title, template_id, owner_id, status, created_at, updated_at, notion_page_id, notion_page_url, notion_synced_at
 `
 
 type CreateNoteParams struct {
@@ -40,6 +40,9 @@ func (q *Queries) CreateNote(ctx context.Context, arg *CreateNoteParams) (*Note,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.NotionPageID,
+		&i.NotionPageUrl,
+		&i.NotionSyncedAt,
 	)
 	return &i, err
 }
@@ -90,7 +93,7 @@ func (q *Queries) DeleteSectionsByNote(ctx context.Context, noteID pgtype.UUID) 
 
 const getNoteByID = `-- name: GetNoteByID :one
 SELECT
-    n.id, n.title, n.template_id, n.owner_id, n.status, n.created_at, n.updated_at,
+    n.id, n.title, n.template_id, n.owner_id, n.status, n.created_at, n.updated_at, n.notion_page_id, n.notion_page_url, n.notion_synced_at,
     t.name AS template_name,
     a.first_name,
     a.last_name,
@@ -109,6 +112,9 @@ type GetNoteByIDRow struct {
 	Status         string             `db:"status" json:"status"`
 	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	NotionPageID   pgtype.Text        `db:"notion_page_id" json:"notion_page_id"`
+	NotionPageUrl  pgtype.Text        `db:"notion_page_url" json:"notion_page_url"`
+	NotionSyncedAt pgtype.Timestamptz `db:"notion_synced_at" json:"notion_synced_at"`
 	TemplateName   string             `db:"template_name" json:"template_name"`
 	FirstName      string             `db:"first_name" json:"first_name"`
 	LastName       string             `db:"last_name" json:"last_name"`
@@ -126,6 +132,9 @@ func (q *Queries) GetNoteByID(ctx context.Context, id pgtype.UUID) (*GetNoteByID
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.NotionPageID,
+		&i.NotionPageUrl,
+		&i.NotionSyncedAt,
 		&i.TemplateName,
 		&i.FirstName,
 		&i.LastName,
@@ -136,7 +145,7 @@ func (q *Queries) GetNoteByID(ctx context.Context, id pgtype.UUID) (*GetNoteByID
 
 const listNotes = `-- name: ListNotes :many
 SELECT
-    n.id, n.title, n.template_id, n.owner_id, n.status, n.created_at, n.updated_at,
+    n.id, n.title, n.template_id, n.owner_id, n.status, n.created_at, n.updated_at, n.notion_page_id, n.notion_page_url, n.notion_synced_at,
     t.name AS template_name,
     a.first_name,
     a.last_name,
@@ -166,6 +175,9 @@ type ListNotesRow struct {
 	Status         string             `db:"status" json:"status"`
 	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	NotionPageID   pgtype.Text        `db:"notion_page_id" json:"notion_page_id"`
+	NotionPageUrl  pgtype.Text        `db:"notion_page_url" json:"notion_page_url"`
+	NotionSyncedAt pgtype.Timestamptz `db:"notion_synced_at" json:"notion_synced_at"`
 	TemplateName   string             `db:"template_name" json:"template_name"`
 	FirstName      string             `db:"first_name" json:"first_name"`
 	LastName       string             `db:"last_name" json:"last_name"`
@@ -194,6 +206,9 @@ func (q *Queries) ListNotes(ctx context.Context, arg *ListNotesParams) ([]*ListN
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.NotionPageID,
+			&i.NotionPageUrl,
+			&i.NotionSyncedAt,
 			&i.TemplateName,
 			&i.FirstName,
 			&i.LastName,
@@ -265,7 +280,7 @@ SET
     title = $2,
     updated_at = NOW()
 WHERE id = $1
-RETURNING id, title, template_id, owner_id, status, created_at, updated_at
+RETURNING id, title, template_id, owner_id, status, created_at, updated_at, notion_page_id, notion_page_url, notion_synced_at
 `
 
 type UpdateNoteParams struct {
@@ -284,6 +299,9 @@ func (q *Queries) UpdateNote(ctx context.Context, arg *UpdateNoteParams) (*Note,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.NotionPageID,
+		&i.NotionPageUrl,
+		&i.NotionSyncedAt,
 	)
 	return &i, err
 }
@@ -294,7 +312,7 @@ SET
     status = $2,
     updated_at = NOW()
 WHERE id = $1
-RETURNING id, title, template_id, owner_id, status, created_at, updated_at
+RETURNING id, title, template_id, owner_id, status, created_at, updated_at, notion_page_id, notion_page_url, notion_synced_at
 `
 
 type UpdateNoteStatusParams struct {
@@ -313,6 +331,9 @@ func (q *Queries) UpdateNoteStatus(ctx context.Context, arg *UpdateNoteStatusPar
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.NotionPageID,
+		&i.NotionPageUrl,
+		&i.NotionSyncedAt,
 	)
 	return &i, err
 }

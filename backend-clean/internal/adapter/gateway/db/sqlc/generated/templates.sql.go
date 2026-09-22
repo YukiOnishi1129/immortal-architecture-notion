@@ -58,7 +58,7 @@ func (q *Queries) CreateField(ctx context.Context, arg *CreateFieldParams) (*Fie
 const createTemplate = `-- name: CreateTemplate :one
 INSERT INTO templates (name, owner_id)
 VALUES ($1, $2)
-RETURNING id, name, owner_id, updated_at
+RETURNING id, name, owner_id, updated_at, notion_parent_page_id
 `
 
 type CreateTemplateParams struct {
@@ -74,6 +74,7 @@ func (q *Queries) CreateTemplate(ctx context.Context, arg *CreateTemplateParams)
 		&i.Name,
 		&i.OwnerID,
 		&i.UpdatedAt,
+		&i.NotionParentPageID,
 	)
 	return &i, err
 }
@@ -110,7 +111,7 @@ func (q *Queries) DeleteTemplate(ctx context.Context, id pgtype.UUID) error {
 
 const getTemplateByID = `-- name: GetTemplateByID :one
 SELECT
-    t.id, t.name, t.owner_id, t.updated_at,
+    t.id, t.name, t.owner_id, t.updated_at, t.notion_parent_page_id,
     a.first_name AS owner_first_name,
     a.last_name AS owner_last_name,
     a.thumbnail AS owner_thumbnail,
@@ -126,14 +127,15 @@ WHERE t.id = $1
 `
 
 type GetTemplateByIDRow struct {
-	ID             pgtype.UUID        `db:"id" json:"id"`
-	Name           string             `db:"name" json:"name"`
-	OwnerID        pgtype.UUID        `db:"owner_id" json:"owner_id"`
-	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-	OwnerFirstName string             `db:"owner_first_name" json:"owner_first_name"`
-	OwnerLastName  string             `db:"owner_last_name" json:"owner_last_name"`
-	OwnerThumbnail pgtype.Text        `db:"owner_thumbnail" json:"owner_thumbnail"`
-	IsUsed         bool               `db:"is_used" json:"is_used"`
+	ID                 pgtype.UUID        `db:"id" json:"id"`
+	Name               string             `db:"name" json:"name"`
+	OwnerID            pgtype.UUID        `db:"owner_id" json:"owner_id"`
+	UpdatedAt          pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	NotionParentPageID pgtype.Text        `db:"notion_parent_page_id" json:"notion_parent_page_id"`
+	OwnerFirstName     string             `db:"owner_first_name" json:"owner_first_name"`
+	OwnerLastName      string             `db:"owner_last_name" json:"owner_last_name"`
+	OwnerThumbnail     pgtype.Text        `db:"owner_thumbnail" json:"owner_thumbnail"`
+	IsUsed             bool               `db:"is_used" json:"is_used"`
 }
 
 func (q *Queries) GetTemplateByID(ctx context.Context, id pgtype.UUID) (*GetTemplateByIDRow, error) {
@@ -144,6 +146,7 @@ func (q *Queries) GetTemplateByID(ctx context.Context, id pgtype.UUID) (*GetTemp
 		&i.Name,
 		&i.OwnerID,
 		&i.UpdatedAt,
+		&i.NotionParentPageID,
 		&i.OwnerFirstName,
 		&i.OwnerLastName,
 		&i.OwnerThumbnail,
@@ -187,7 +190,7 @@ func (q *Queries) ListFieldsByTemplate(ctx context.Context, templateID pgtype.UU
 
 const listTemplates = `-- name: ListTemplates :many
 SELECT
-    t.id, t.name, t.owner_id, t.updated_at,
+    t.id, t.name, t.owner_id, t.updated_at, t.notion_parent_page_id,
     a.first_name AS owner_first_name,
     a.last_name AS owner_last_name,
     a.thumbnail AS owner_thumbnail,
@@ -210,14 +213,15 @@ type ListTemplatesParams struct {
 }
 
 type ListTemplatesRow struct {
-	ID             pgtype.UUID        `db:"id" json:"id"`
-	Name           string             `db:"name" json:"name"`
-	OwnerID        pgtype.UUID        `db:"owner_id" json:"owner_id"`
-	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-	OwnerFirstName string             `db:"owner_first_name" json:"owner_first_name"`
-	OwnerLastName  string             `db:"owner_last_name" json:"owner_last_name"`
-	OwnerThumbnail pgtype.Text        `db:"owner_thumbnail" json:"owner_thumbnail"`
-	IsUsed         bool               `db:"is_used" json:"is_used"`
+	ID                 pgtype.UUID        `db:"id" json:"id"`
+	Name               string             `db:"name" json:"name"`
+	OwnerID            pgtype.UUID        `db:"owner_id" json:"owner_id"`
+	UpdatedAt          pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	NotionParentPageID pgtype.Text        `db:"notion_parent_page_id" json:"notion_parent_page_id"`
+	OwnerFirstName     string             `db:"owner_first_name" json:"owner_first_name"`
+	OwnerLastName      string             `db:"owner_last_name" json:"owner_last_name"`
+	OwnerThumbnail     pgtype.Text        `db:"owner_thumbnail" json:"owner_thumbnail"`
+	IsUsed             bool               `db:"is_used" json:"is_used"`
 }
 
 func (q *Queries) ListTemplates(ctx context.Context, arg *ListTemplatesParams) ([]*ListTemplatesRow, error) {
@@ -234,6 +238,7 @@ func (q *Queries) ListTemplates(ctx context.Context, arg *ListTemplatesParams) (
 			&i.Name,
 			&i.OwnerID,
 			&i.UpdatedAt,
+			&i.NotionParentPageID,
 			&i.OwnerFirstName,
 			&i.OwnerLastName,
 			&i.OwnerThumbnail,
@@ -290,7 +295,7 @@ SET
     name = $2,
     updated_at = NOW()
 WHERE id = $1
-RETURNING id, name, owner_id, updated_at
+RETURNING id, name, owner_id, updated_at, notion_parent_page_id
 `
 
 type UpdateTemplateParams struct {
@@ -306,6 +311,7 @@ func (q *Queries) UpdateTemplate(ctx context.Context, arg *UpdateTemplateParams)
 		&i.Name,
 		&i.OwnerID,
 		&i.UpdatedAt,
+		&i.NotionParentPageID,
 	)
 	return &i, err
 }

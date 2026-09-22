@@ -60,30 +60,33 @@ func (m *templateRow) Scan(dest ...interface{}) error {
 	if m.err != nil {
 		return m.err
 	}
-	switch len(dest) {
-	case 5: // Field
-		if m.fieldRow == nil {
-			return errors.New("fieldRow is nil")
-		}
+	// Template と Field はどちらも 5 列になるため、列数だけでは判別できない。
+	// テストがセットした行データで振り分ける。
+	switch {
+	case len(dest) == 5 && m.fieldRow != nil: // Field
 		setUUID(dest[0], m.fieldRow.ID)
 		setUUID(dest[1], m.fieldRow.TemplateID)
 		setString(dest[2], m.fieldRow.Label)
 		setInt32Field(dest[3], m.fieldRow.Order)
 		setBool(dest[4], m.fieldRow.IsRequired)
-	case 4: // Template
+	case len(dest) == 5 && m.templateRow != nil: // Template
 		setUUID(dest[0], m.templateRow.ID)
 		setString(dest[1], m.templateRow.Name)
 		setUUID(dest[2], m.templateRow.OwnerID)
 		setTimestamptz(dest[3], m.templateRow.UpdatedAt)
-	case 8: // GetTemplateByIDRow
+		setText(dest[4], m.templateRow.NotionParentPageID)
+	case len(dest) == 5:
+		return errors.New("fieldRow is nil")
+	case len(dest) == 9: // GetTemplateByIDRow
 		setUUID(dest[0], m.detailRow.ID)
 		setString(dest[1], m.detailRow.Name)
 		setUUID(dest[2], m.detailRow.OwnerID)
 		setTimestamptz(dest[3], m.detailRow.UpdatedAt)
-		setString(dest[4], m.detailRow.OwnerFirstName)
-		setString(dest[5], m.detailRow.OwnerLastName)
-		setText(dest[6], m.detailRow.OwnerThumbnail)
-		setBool(dest[7], m.detailRow.IsUsed)
+		setText(dest[4], m.detailRow.NotionParentPageID)
+		setString(dest[5], m.detailRow.OwnerFirstName)
+		setString(dest[6], m.detailRow.OwnerLastName)
+		setText(dest[7], m.detailRow.OwnerThumbnail)
+		setBool(dest[8], m.detailRow.IsUsed)
 	default:
 		return errors.New("unexpected scan args")
 	}
