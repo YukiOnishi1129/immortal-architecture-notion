@@ -66,6 +66,28 @@ NotionSync   ──▶   NotionClient   ──▶   api.notion.com
 
 **本物を呼ぶのは、最後に手で確認するときだけ**です（第6章）。
 
+### 「モックのテストが全部通るのに動かない」を防ぐ
+
+各層をモックで固めても、**層のつなぎ目**は検証できません。
+
+```
+publish が 200 を返す        … Controller のテストで分かる
+公開後に一覧へ出る           … どの層のテストでも分からない
+```
+
+今回はCQRSなので、書き込み（publish）と読み出し（一覧）が**別テーブル**です。
+コピー処理を1行忘れても全テストが通り、画面にだけ出ません。
+
+そこで**実DBを使い、Notionだけモックにした**テストを置きます。
+
+```
+実物 … Echo / Controller / UseCase / sqlc / PostgreSQL
+モック … Notion APIのみ
+```
+
+使い捨てのDBコンテナを起動して実行するので、CIでも回せます。
+**QAケースをそのまま自動化する**形になり、手動確認の回数を減らせます。
+
 ### 層ごとの方法と目標
 
 | 層 | 方法 | 検証すること | 目標 |
@@ -74,6 +96,7 @@ NotionSync   ──▶   NotionClient   ──▶   api.notion.com
 | UseCase | gomock | 処理の流れ、呼び出し順序 | 80%+ |
 | Gateway (Notion) | httptest | HTTPの扱い、リトライ | 80%+ |
 | Controller | httptest | ステータスコード | 80%+ |
+| シナリオ | 実DB + Notionモック | 操作をまたいだ状態の整合 | - |
 | E2E | 手動 | 本当に繋がるか | - |
 
 目標値は第2章の実測値が根拠です（`domain/service` が100%、`controller` が84.7%）。
