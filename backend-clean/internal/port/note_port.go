@@ -3,6 +3,7 @@ package port
 
 import (
 	"context"
+	"time"
 
 	"immortal-architecture-notion/backend/internal/domain/note"
 )
@@ -16,6 +17,10 @@ type NoteRepository interface {
 	UpdateStatus(ctx context.Context, id string, status note.NoteStatus) (*note.Note, error)
 	Delete(ctx context.Context, id string) error
 	ReplaceSections(ctx context.Context, noteID string, sections []note.Section) error
+
+	// SaveNotionPage stores the Notion page a note is linked to.
+	// Passing nil for pageID clears the link.
+	SaveNotionPage(ctx context.Context, noteID string, pageID, pageURL *string, syncedAt *time.Time) error
 }
 
 // NoteCreateInput is input for creating notes.

@@ -39,6 +39,15 @@ SET
 WHERE id = $1
 RETURNING *;
 
+-- name: UpdateNoteNotionPage :one
+UPDATE notes
+SET
+    notion_page_id = $2,
+    notion_page_url = $3,
+    notion_synced_at = $4
+WHERE id = $1
+RETURNING *;
+
 -- name: DeleteNote :exec
 DELETE FROM notes
 WHERE id = $1;

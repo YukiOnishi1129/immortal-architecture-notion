@@ -391,3 +391,102 @@ func TestNoteRepository_ReplaceSections(t *testing.T) {
 		})
 	}
 }
+
+func TestNoteRepository_SaveNotionPage(t *testing.T) {
+	now := time.Now().UTC().Truncate(time.Second)
+	baseRow := &generated.Note{
+		ID:         pgtype.UUID{Bytes: [16]byte{1}, Valid: true},
+		Title:      "t",
+		TemplateID: pgtype.UUID{Bytes: [16]byte{2}, Valid: true},
+		OwnerID:    pgtype.UUID{Bytes: [16]byte{3}, Valid: true},
+		Status:     string(note.StatusDraft),
+		CreatedAt:  pgtype.Timestamptz{Time: now, Valid: true},
+		UpdatedAt:  pgtype.Timestamptz{Time: now, Valid: true},
+	}
+	pageID := "1429989fe8ac4effbc8f57f56486db54"
+	pageURL := "https://www.notion.so/" + pageID
+
+	tests := []struct {
+		name    string
+		id      string
+		pageID  *string
+		pageURL *string
+		synced  *time.Time
+		rowErr  error
+		wantErr error
+	}{
+		{
+			name: "[Success] link a page", id: baseRow.ID.String(),
+			pageID: &pageID, pageURL: &pageURL, synced: &now,
+		},
+		{
+			name: "[Success] nil clears the link", id: baseRow.ID.String(),
+		},
+		{
+			name: "[Fail] invalid uuid", id: "bad-uuid",
+			wantErr: errors.New("invalid"),
+		},
+		{
+			name: "[Fail] not found", id: baseRow.ID.String(),
+			rowErr: pgx.ErrNoRows, wantErr: domainerr.ErrNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mock := mockdb.NewNoteDBTX(baseRow, tt.rowErr, nil)
+			repo := &NoteRepository{queries: generated.New(mock)}
+
+			err := repo.SaveNotionPage(context.Background(), tt.id, tt.pageID, tt.pageURL, tt.synced)
+
+			if tt.wantErr != nil {
+				if err == nil {
+					t.Fatalf("expected error, got nil")
+				}
+				// The invalid uuid case has no sentinel error to match on.
+				if tt.wantErr == domainerr.ErrNotFound && !errors.Is(err, domainerr.ErrNotFound) {
+					t.Fatalf("want ErrNotFound, got %v", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			// nil must reach the database as SQL NULL, not as an empty value.
+			args := mock.LastQueryRowArgs()
+			if len(args) != 4 {
+				t.Fatalf("expected 4 query args, got %d", len(args))
+			}
+			gotID, ok := args[1].(pgtype.Text)
+			if !ok {
+				t.Fatalf("arg 1 is %T, want pgtype.Text", args[1])
+			}
+			gotURL, ok := args[2].(pgtype.Text)
+			if !ok {
+				t.Fatalf("arg 2 is %T, want pgtype.Text", args[2])
+			}
+			gotSynced, ok := args[3].(pgtype.Timestamptz)
+			if !ok {
+				t.Fatalf("arg 3 is %T, want pgtype.Timestamptz", args[3])
+			}
+
+			wantValid := tt.pageID != nil
+			if gotID.Valid != wantValid || gotURL.Valid != wantValid || gotSynced.Valid != wantValid {
+				t.Fatalf("validity = (%v, %v, %v), want all %v",
+					gotID.Valid, gotURL.Valid, gotSynced.Valid, wantValid)
+			}
+			if wantValid {
+				if gotID.String != pageID {
+					t.Fatalf("page id = %q, want %q", gotID.String, pageID)
+				}
+				if gotURL.String != pageURL {
+					t.Fatalf("page url = %q, want %q", gotURL.String, pageURL)
+				}
+				if !gotSynced.Time.Equal(now) {
+					t.Fatalf("synced at = %v, want %v", gotSynced.Time, now)
+				}
+			}
+		})
+	}
+}

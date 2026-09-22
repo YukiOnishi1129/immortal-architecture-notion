@@ -3,8 +3,10 @@ package usecase
 
 import (
 	"context"
+	"strings"
 
 	domainerr "immortal-architecture-notion/backend/internal/domain/errors"
+	"immortal-architecture-notion/backend/internal/domain/notion"
 	"immortal-architecture-notion/backend/internal/domain/template"
 	"immortal-architecture-notion/backend/internal/port"
 )
@@ -51,11 +53,17 @@ func (u *TemplateInteractor) Create(ctx context.Context, input port.TemplateCrea
 		return err
 	}
 
+	parentPageID, err := resolveParentPageID(input.NotionParentPageURL)
+	if err != nil {
+		return err
+	}
+
 	var createdID string
-	err := u.tx.WithinTransaction(ctx, func(txCtx context.Context) error {
+	err = u.tx.WithinTransaction(ctx, func(txCtx context.Context) error {
 		tpl, err := u.repo.Create(txCtx, template.Template{
-			Name:    input.Name,
-			OwnerID: input.OwnerID,
+			Name:               input.Name,
+			OwnerID:            input.OwnerID,
+			NotionParentPageID: parentPageID,
 		})
 		if err != nil {
 			return err
@@ -97,10 +105,21 @@ func (u *TemplateInteractor) Update(ctx context.Context, input port.TemplateUpda
 			return err
 		}
 	}
+	// An omitted field means "no change", so the stored id is kept.
+	// Only an explicitly empty string clears the link.
+	parentPageID := current.Template.NotionParentPageID
+	if input.NotionParentPageURL != nil {
+		parentPageID, err = resolveParentPageID(*input.NotionParentPageURL)
+		if err != nil {
+			return err
+		}
+	}
+
 	err = u.tx.WithinTransaction(ctx, func(txCtx context.Context) error {
 		_, err := u.repo.Update(txCtx, template.Template{
-			ID:   input.ID,
-			Name: input.Name,
+			ID:                 input.ID,
+			Name:               input.Name,
+			NotionParentPageID: parentPageID,
 		})
 		if err != nil {
 			return err
@@ -141,4 +160,13 @@ func (u *TemplateInteractor) Delete(ctx context.Context, id, ownerID string) err
 		return err
 	}
 	return u.output.PresentTemplateDeleted(ctx)
+}
+
+// resolveParentPageID turns a Notion page URL into a page id.
+// An empty URL is allowed and means the template is not linked to Notion.
+func resolveParentPageID(rawURL string) (string, error) {
+	if strings.TrimSpace(rawURL) == "" {
+		return "", nil
+	}
+	return notion.ExtractPageID(rawURL)
 }

@@ -306,6 +306,46 @@ func (q *Queries) UpdateNote(ctx context.Context, arg *UpdateNoteParams) (*Note,
 	return &i, err
 }
 
+const updateNoteNotionPage = `-- name: UpdateNoteNotionPage :one
+UPDATE notes
+SET
+    notion_page_id = $2,
+    notion_page_url = $3,
+    notion_synced_at = $4
+WHERE id = $1
+RETURNING id, title, template_id, owner_id, status, created_at, updated_at, notion_page_id, notion_page_url, notion_synced_at
+`
+
+type UpdateNoteNotionPageParams struct {
+	ID             pgtype.UUID        `db:"id" json:"id"`
+	NotionPageID   pgtype.Text        `db:"notion_page_id" json:"notion_page_id"`
+	NotionPageUrl  pgtype.Text        `db:"notion_page_url" json:"notion_page_url"`
+	NotionSyncedAt pgtype.Timestamptz `db:"notion_synced_at" json:"notion_synced_at"`
+}
+
+func (q *Queries) UpdateNoteNotionPage(ctx context.Context, arg *UpdateNoteNotionPageParams) (*Note, error) {
+	row := q.db.QueryRow(ctx, updateNoteNotionPage,
+		arg.ID,
+		arg.NotionPageID,
+		arg.NotionPageUrl,
+		arg.NotionSyncedAt,
+	)
+	var i Note
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.TemplateID,
+		&i.OwnerID,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.NotionPageID,
+		&i.NotionPageUrl,
+		&i.NotionSyncedAt,
+	)
+	return &i, err
+}
+
 const updateNoteStatus = `-- name: UpdateNoteStatus :one
 UPDATE notes
 SET

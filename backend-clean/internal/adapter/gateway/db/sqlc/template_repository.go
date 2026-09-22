@@ -71,11 +71,12 @@ func (r *TemplateRepository) List(ctx context.Context, filters template.Filters)
 		owner := toTemplateOwner(row.OwnerID, row.OwnerFirstName, row.OwnerLastName, row.OwnerThumbnail)
 		result = append(result, template.WithUsage{
 			Template: template.Template{
-				ID:        uuidToString(row.ID),
-				Name:      row.Name,
-				OwnerID:   uuidToString(row.OwnerID),
-				UpdatedAt: timestamptzToTime(row.UpdatedAt),
-				Fields:    fields,
+				ID:                 uuidToString(row.ID),
+				Name:               row.Name,
+				OwnerID:            uuidToString(row.OwnerID),
+				UpdatedAt:          timestamptzToTime(row.UpdatedAt),
+				Fields:             fields,
+				NotionParentPageID: nullableTextToString(row.NotionParentPageID),
 			},
 			IsUsed: row.IsUsed,
 			Owner:  owner,
@@ -104,11 +105,12 @@ func (r *TemplateRepository) Get(ctx context.Context, id string) (*template.With
 	owner := toTemplateOwner(row.OwnerID, row.OwnerFirstName, row.OwnerLastName, row.OwnerThumbnail)
 	return &template.WithUsage{
 		Template: template.Template{
-			ID:        uuidToString(row.ID),
-			Name:      row.Name,
-			OwnerID:   uuidToString(row.OwnerID),
-			UpdatedAt: timestamptzToTime(row.UpdatedAt),
-			Fields:    fields,
+			ID:                 uuidToString(row.ID),
+			Name:               row.Name,
+			OwnerID:            uuidToString(row.OwnerID),
+			UpdatedAt:          timestamptzToTime(row.UpdatedAt),
+			Fields:             fields,
+			NotionParentPageID: nullableTextToString(row.NotionParentPageID),
 		},
 		IsUsed: row.IsUsed,
 		Owner:  owner,
@@ -122,17 +124,19 @@ func (r *TemplateRepository) Create(ctx context.Context, tpl template.Template) 
 		return nil, err
 	}
 	row, err := queriesForContext(ctx, r.queries).CreateTemplate(ctx, &generated.CreateTemplateParams{
-		Name:    tpl.Name,
-		OwnerID: owner,
+		Name:               tpl.Name,
+		OwnerID:            owner,
+		NotionParentPageID: pgTextFromString(tpl.NotionParentPageID),
 	})
 	if err != nil {
 		return nil, err
 	}
 	return &template.Template{
-		ID:        uuidToString(row.ID),
-		Name:      row.Name,
-		OwnerID:   uuidToString(row.OwnerID),
-		UpdatedAt: timestamptzToTime(row.UpdatedAt),
+		ID:                 uuidToString(row.ID),
+		Name:               row.Name,
+		OwnerID:            uuidToString(row.OwnerID),
+		UpdatedAt:          timestamptzToTime(row.UpdatedAt),
+		NotionParentPageID: nullableTextToString(row.NotionParentPageID),
 	}, nil
 }
 
@@ -143,8 +147,9 @@ func (r *TemplateRepository) Update(ctx context.Context, tpl template.Template) 
 		return nil, err
 	}
 	row, err := queriesForContext(ctx, r.queries).UpdateTemplate(ctx, &generated.UpdateTemplateParams{
-		ID:   pgID,
-		Name: tpl.Name,
+		ID:                 pgID,
+		Name:               tpl.Name,
+		NotionParentPageID: pgTextFromString(tpl.NotionParentPageID),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -153,10 +158,11 @@ func (r *TemplateRepository) Update(ctx context.Context, tpl template.Template) 
 		return nil, err
 	}
 	return &template.Template{
-		ID:        uuidToString(row.ID),
-		Name:      row.Name,
-		OwnerID:   uuidToString(row.OwnerID),
-		UpdatedAt: timestamptzToTime(row.UpdatedAt),
+		ID:                 uuidToString(row.ID),
+		Name:               row.Name,
+		OwnerID:            uuidToString(row.OwnerID),
+		UpdatedAt:          timestamptzToTime(row.UpdatedAt),
+		NotionParentPageID: nullableTextToString(row.NotionParentPageID),
 	}, nil
 }
 

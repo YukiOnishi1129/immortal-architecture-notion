@@ -25,10 +25,10 @@ func TestTemplatePresenter_TableDriven(t *testing.T) {
 			action: "single",
 			single: &template.WithUsage{
 				Template: template.Template{
-					ID:      "tpl-1",
-					Name:    "Template",
-					OwnerID: "owner-1",
-					Fields:  []template.Field{{ID: "f1", Label: "Title", Order: 2, IsRequired: true}},
+					ID:        "tpl-1",
+					Name:      "Template",
+					OwnerID:   "owner-1",
+					Fields:    []template.Field{{ID: "f1", Label: "Title", Order: 2, IsRequired: true}},
 					UpdatedAt: now,
 				},
 				Owner:  template.Owner{ID: "owner-1", FirstName: "Taro", LastName: "Yamada"},

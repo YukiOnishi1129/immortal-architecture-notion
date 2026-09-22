@@ -38,6 +38,10 @@ type TemplateCreateInput struct {
 	Name    string
 	OwnerID string
 	Fields  []template.Field
+
+	// NotionParentPageURL is the Notion page notes will be created under.
+	// Empty means the template is not linked to Notion.
+	NotionParentPageURL string
 }
 
 // TemplateUpdateInput is input for updating templates.
@@ -46,4 +50,9 @@ type TemplateUpdateInput struct {
 	Name    string
 	Fields  []template.Field
 	OwnerID string
+
+	// NotionParentPageURL is the Notion page notes will be created under.
+	// nil means the field was not sent and the current link is kept;
+	// an empty string is an explicit request to clear it.
+	NotionParentPageURL *string
 }

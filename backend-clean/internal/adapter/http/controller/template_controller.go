@@ -76,9 +76,10 @@ func (c *TemplateController) Create(ctx echo.Context) error {
 	}
 	input, p := c.newIO()
 	err := input.Create(ctx.Request().Context(), port.TemplateCreateInput{
-		Name:    body.Name,
-		OwnerID: ownerID,
-		Fields:  fields,
+		Name:                body.Name,
+		OwnerID:             ownerID,
+		Fields:              fields,
+		NotionParentPageURL: valueOrEmpty(body.NotionParentPageUrl),
 	})
 	if err != nil {
 		return handleError(ctx, err)
@@ -107,10 +108,11 @@ func (c *TemplateController) Update(ctx echo.Context, templateID string, params 
 	}
 	input, p := c.newIO()
 	err := input.Update(ctx.Request().Context(), port.TemplateUpdateInput{
-		ID:      templateID,
-		Name:    body.Name,
-		Fields:  fields,
-		OwnerID: ownerID,
+		ID:                  templateID,
+		Name:                body.Name,
+		Fields:              fields,
+		OwnerID:             ownerID,
+		NotionParentPageURL: body.NotionParentPageUrl,
 	})
 	if err != nil {
 		return handleError(ctx, err)

@@ -40,6 +40,8 @@ var (
 	ErrOwnerRequired = errors.New("owner is required")
 	// ErrNotionParentNotSet indicates the template has no Notion parent page.
 	ErrNotionParentNotSet = errors.New("notion parent page is not set for the template")
+	// ErrInvalidNotionParentURL indicates the supplied Notion page URL is malformed.
+	ErrInvalidNotionParentURL = errors.New("invalid notionParentPageUrl")
 	// ErrNotionSyncFailed indicates the Notion API call failed.
 	ErrNotionSyncFailed = errors.New("failed to sync with notion")
 )

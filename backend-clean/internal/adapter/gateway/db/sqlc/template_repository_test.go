@@ -9,8 +9,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	mockdb "immortal-architecture-notion/backend/internal/adapter/gateway/db/sqlc/mock"
 	"immortal-architecture-notion/backend/internal/adapter/gateway/db/sqlc/generated"
+	mockdb "immortal-architecture-notion/backend/internal/adapter/gateway/db/sqlc/mock"
 	domainerr "immortal-architecture-notion/backend/internal/domain/errors"
 	"immortal-architecture-notion/backend/internal/domain/template"
 )

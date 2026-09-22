@@ -409,3 +409,110 @@ func TestTemplateInteractor_Delete(t *testing.T) {
 		})
 	}
 }
+
+// TestTemplateInteractor_Update_NotionParentPage pins down how the optional
+// notionParentPageUrl field is applied, since the existing Update cases accept
+// any template and never assert the value that is written.
+func TestTemplateInteractor_Update_NotionParentPage(t *testing.T) {
+	const storedID = "1429989fe8ac4effbc8f57f56486db54"
+
+	strPtr := func(s string) *string { return &s }
+
+	tests := []struct {
+		name    string
+		sentURL *string
+		want    string
+	}{
+		{
+			name:    "[Keep] field omitted keeps the stored page",
+			sentURL: nil,
+			want:    storedID,
+		},
+		{
+			name:    "[Clear] empty string clears the link",
+			sentURL: strPtr(""),
+			want:    "",
+		},
+		{
+			name:    "[Replace] a new url overwrites the stored page",
+			sentURL: strPtr("https://www.notion.so/team/Daily-aaaaaaaabbbbccccddddeeeeeeeeeeee"),
+			want:    "aaaaaaaabbbbccccddddeeeeeeeeeeee",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			repo := mockusecase.NewMockTemplateRepository(ctrl)
+			tx := mockusecase.NewMockTxManager(ctrl)
+			out := mockusecase.NewMockTemplateOutputPort(ctrl)
+
+			current := &template.WithUsage{
+				Template: template.Template{
+					ID:                 "tpl-1",
+					Name:               "old",
+					OwnerID:            "owner-1",
+					NotionParentPageID: storedID,
+				},
+			}
+
+			repo.EXPECT().Get(gomock.Any(), "tpl-1").Return(current, nil).Times(2)
+			tx.EXPECT().WithinTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+				func(ctx context.Context, fn func(context.Context) error) error { return fn(ctx) },
+			)
+
+			var written string
+			repo.EXPECT().Update(gomock.Any(), gomock.Any()).DoAndReturn(
+				func(_ context.Context, tpl template.Template) (*template.Template, error) {
+					written = tpl.NotionParentPageID
+					return &current.Template, nil
+				},
+			)
+			out.EXPECT().PresentTemplate(gomock.Any(), current).Return(nil)
+
+			interactor := uc.NewTemplateInteractor(repo, tx, out)
+			err := interactor.Update(context.Background(), port.TemplateUpdateInput{
+				ID:                  "tpl-1",
+				Name:                "updated",
+				OwnerID:             "owner-1",
+				NotionParentPageURL: tt.sentURL,
+			})
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if written != tt.want {
+				t.Fatalf("NotionParentPageID = %q, want %q", written, tt.want)
+			}
+		})
+	}
+}
+
+// TestTemplateInteractor_Update_InvalidNotionURL checks that a malformed url is
+// rejected before anything is written.
+func TestTemplateInteractor_Update_InvalidNotionURL(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	repo := mockusecase.NewMockTemplateRepository(ctrl)
+	tx := mockusecase.NewMockTxManager(ctrl)
+	out := mockusecase.NewMockTemplateOutputPort(ctrl)
+
+	current := &template.WithUsage{
+		Template: template.Template{ID: "tpl-1", Name: "old", OwnerID: "owner-1"},
+	}
+	repo.EXPECT().Get(gomock.Any(), "tpl-1").Return(current, nil)
+
+	bad := "https://www.notion.so/not-a-page"
+	interactor := uc.NewTemplateInteractor(repo, tx, out)
+	err := interactor.Update(context.Background(), port.TemplateUpdateInput{
+		ID:                  "tpl-1",
+		Name:                "updated",
+		OwnerID:             "owner-1",
+		NotionParentPageURL: &bad,
+	})
+	if !errors.Is(err, domainerr.ErrInvalidNotionParentURL) {
+		t.Fatalf("want %v, got %v", domainerr.ErrInvalidNotionParentURL, err)
+	}
+}

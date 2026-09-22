@@ -33,14 +33,15 @@ JOIN accounts a ON a.id = t.owner_id
 WHERE t.id = $1;
 
 -- name: CreateTemplate :one
-INSERT INTO templates (name, owner_id)
-VALUES ($1, $2)
+INSERT INTO templates (name, owner_id, notion_parent_page_id)
+VALUES ($1, $2, $3)
 RETURNING *;
 
 -- name: UpdateTemplate :one
 UPDATE templates
 SET
     name = $2,
+    notion_parent_page_id = $3,
     updated_at = NOW()
 WHERE id = $1
 RETURNING *;
