@@ -42,6 +42,7 @@ export const TemplateResponseSchema = z.object({
   fields: z.array(FieldResponseSchema),
   updatedAt: z.iso.datetime(),
   isUsed: z.boolean().optional(),
+  notionParentPageUrl: z.string().nullable().optional(),
 });
 
 // Template detail schema (with owner info)
@@ -54,11 +55,15 @@ export const TemplateDetailResponseSchema = z.object({
   updatedAt: z.iso.datetime(),
   createdAt: z.iso.datetime().optional(),
   isUsed: z.boolean().optional(),
+  notionParentPageUrl: z.string().nullable().optional(),
 });
 
 export const CreateTemplateRequestSchema = z.object({
   name: z.string().min(1).max(100),
   fields: z.array(FieldInputSchema).min(1),
+  // NotionのページURL。未設定なら連携しない。
+  // 空文字は「解除」、項目なしは「変更しない」を意味する。
+  notionParentPageUrl: z.string().optional(),
 });
 
 export const UpdateTemplateRequestSchema = z.object({
@@ -73,6 +78,9 @@ export const UpdateTemplateRequestSchema = z.object({
       }),
     )
     .min(1),
+  // NotionのページURL。未設定なら連携しない。
+  // 空文字は「解除」、項目なしは「変更しない」を意味する。
+  notionParentPageUrl: z.string().optional(),
 });
 
 export const UpdateTemplateByIdRequestSchema = z.object({
@@ -88,6 +96,9 @@ export const UpdateTemplateByIdRequestSchema = z.object({
       }),
     )
     .min(1),
+  // NotionのページURL。未設定なら連携しない。
+  // 空文字は「解除」、項目なしは「変更しない」を意味する。
+  notionParentPageUrl: z.string().optional(),
 });
 
 export const DeleteTemplateRequestSchema = z.object({

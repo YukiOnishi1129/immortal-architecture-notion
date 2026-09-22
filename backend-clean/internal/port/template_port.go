@@ -31,6 +31,10 @@ type TemplateRepository interface {
 	Update(ctx context.Context, tpl template.Template) (*template.Template, error)
 	Delete(ctx context.Context, id string) error
 	ReplaceFields(ctx context.Context, templateID string, fields []template.Field) error
+
+	// UsedFieldIDs returns the ids of fields that notes already store content
+	// for. Those fields cannot be renamed or removed.
+	UsedFieldIDs(ctx context.Context, templateID string) ([]string, error)
 }
 
 // TemplateCreateInput is input for creating templates.

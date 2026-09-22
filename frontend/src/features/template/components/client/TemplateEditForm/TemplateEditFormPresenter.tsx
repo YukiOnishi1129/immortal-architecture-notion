@@ -12,6 +12,7 @@ import { Checkbox } from "@/shared/components/ui/checkbox";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -25,6 +26,8 @@ interface TemplateEditFormPresenterProps {
   fields: FieldArrayWithId<TemplateEditFormData, "fields", "id">[];
   templateName?: string;
   templateId?: string;
+  /** ノートで使用中のテンプレートは項目を変更できない。 */
+  isUsed?: boolean;
   isSubmitting?: boolean;
   onSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
   onCancel?: () => void;
@@ -38,6 +41,7 @@ export function TemplateEditFormPresenter({
   fields,
   templateName,
   templateId,
+  isUsed = false,
   isSubmitting = false,
   onSubmit,
   onCancel,
@@ -85,6 +89,33 @@ export function TemplateEditFormPresenter({
               )}
             />
 
+            <FormField
+              control={form.control}
+              name="notionParentPageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    NotionのページURL
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      任意
+                    </span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="https://www.notion.so/..."
+                      inputMode="url"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    このテンプレートで作ったノートを公開すると、指定したページの下に
+                    Notionのページが作られます。空にすると連携しません。
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div>
               <div className="flex justify-between items-center mb-4">
                 <FormLabel>項目</FormLabel>
@@ -93,6 +124,7 @@ export function TemplateEditFormPresenter({
                   onClick={onAddField}
                   size="sm"
                   variant="outline"
+                  disabled={isUsed}
                 >
                   <Plus className="w-4 h-4 mr-1" />
                   項目を追加
@@ -142,6 +174,7 @@ export function TemplateEditFormPresenter({
                                         <Input
                                           {...field}
                                           placeholder="項目名を入力"
+                                          disabled={isUsed}
                                         />
                                       </FormControl>
                                       <FormMessage />
@@ -158,6 +191,7 @@ export function TemplateEditFormPresenter({
                                         <Checkbox
                                           checked={field.value}
                                           onCheckedChange={field.onChange}
+                                          disabled={isUsed}
                                         />
                                       </FormControl>
                                       <FormLabel className="m-0 cursor-pointer">
@@ -170,6 +204,7 @@ export function TemplateEditFormPresenter({
                                 <Button
                                   type="button"
                                   onClick={() => onRemoveField(index)}
+                                  disabled={isUsed}
                                   size="sm"
                                   variant="ghost"
                                   className="text-red-500 hover:text-red-700"

@@ -104,6 +104,17 @@ func (u *TemplateInteractor) Update(ctx context.Context, input port.TemplateUpda
 		}); err != nil {
 			return err
 		}
+		// Notes hold content per field, so fields they already use cannot be
+		// renamed or removed. Checked here rather than relying on the database,
+		// which would surface as an unexplained 500.
+		usedFieldIDs, err := u.repo.UsedFieldIDs(ctx, input.ID)
+		if err != nil {
+			return err
+		}
+		if err := template.ValidateFieldsChange(
+			current.Template.Fields, input.Fields, usedFieldIDs); err != nil {
+			return err
+		}
 	}
 	// An omitted field means "no change", so the stored id is kept.
 	// Only an explicitly empty string clears the link.

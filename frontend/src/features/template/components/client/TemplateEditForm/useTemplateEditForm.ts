@@ -20,6 +20,7 @@ export function useTemplateEditForm(templateId: string) {
     defaultValues: {
       name: "",
       fields: [],
+      notionParentPageUrl: "",
     },
   });
 
@@ -39,6 +40,7 @@ export function useTemplateEditForm(templateId: string) {
           isRequired: field.isRequired,
           order: field.order,
         })),
+        notionParentPageUrl: template.notionParentPageUrl ?? "",
       });
     }
   }, [template, isLoading, form]);
@@ -46,7 +48,11 @@ export function useTemplateEditForm(templateId: string) {
   const handleSubmit = form.handleSubmit((data: TemplateEditFormData) => {
     startTransition(async () => {
       try {
-        const fields = data.fields.map(({ label, isRequired }, index) => ({
+        // 既存項目の id はそのまま送る。落とすとサーバーからは
+        // 「消して作り直す」リクエストに見え、ノートが使っている項目を
+        // 削除しようとして失敗する。
+        const fields = data.fields.map(({ id, label, isRequired }, index) => ({
+          id,
           label,
           isRequired,
           order: index + 1,
@@ -56,6 +62,8 @@ export function useTemplateEditForm(templateId: string) {
           id: templateId,
           name: data.name,
           fields,
+          // 空文字は「連携を解除する」という意味でそのまま送る。
+          notionParentPageUrl: data.notionParentPageUrl.trim(),
         });
 
         toast.success("テンプレートを更新しました");

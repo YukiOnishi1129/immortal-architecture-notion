@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { getTemplateByIdQuery } from "@/external/handler/template/template.query.server";
 import { getSessionServer } from "@/features/auth/servers/auth.server";
 import { TemplateEditPageTemplate } from "@/features/template/components/server/TemplateEditPageTemplate";
@@ -19,11 +19,6 @@ export default async function TemplateEditPage({
   // Check if user is owner
   if (session?.account?.id !== template.ownerId) {
     notFound(); // or redirect to 403
-  }
-
-  // Check if template is used by notes
-  if (template.isUsed) {
-    redirect(`/templates/${id}`);
   }
 
   return <TemplateEditPageTemplate templateId={id} />;

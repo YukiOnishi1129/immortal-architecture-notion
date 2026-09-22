@@ -13,6 +13,8 @@ export const templateNewFormSchema = z.object({
     .min(1, "テンプレート名は必須です")
     .max(100, "テンプレート名は100文字以内で入力してください"),
   fields: z.array(templateFieldSchema).min(1, "少なくとも1つの項目が必要です"),
+  // 任意項目。URLの形式チェックはサーバー側が行うため、ここでは受け取るだけ。
+  notionParentPageUrl: z.string(),
 });
 
 export type TemplateField = z.infer<typeof templateFieldSchema>;

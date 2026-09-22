@@ -299,6 +299,9 @@ func TestTemplateInteractor_Update(t *testing.T) {
 			out := mockusecase.NewMockTemplateOutputPort(ctrl)
 
 			repo.EXPECT().Get(gomock.Any(), tt.input.ID).Return(tt.current, tt.getErr)
+			// Fields are checked against what notes already use.
+			repo.EXPECT().UsedFieldIDs(gomock.Any(), tt.input.ID).
+				Return(nil, nil).AnyTimes()
 			if tt.getErr == nil && tt.expectTxRun {
 				tx.EXPECT().WithinTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(_ context.Context, fn func(context.Context) error) error {

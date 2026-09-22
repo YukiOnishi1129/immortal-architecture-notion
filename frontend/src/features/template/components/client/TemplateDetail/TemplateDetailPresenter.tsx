@@ -1,6 +1,14 @@
 "use client";
 
-import { Calendar, Check, Edit, FileText, Trash2, User } from "lucide-react";
+import {
+  Calendar,
+  Check,
+  Edit,
+  ExternalLink,
+  FileText,
+  Trash2,
+  User,
+} from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import type { Template } from "@/features/template/types";
@@ -96,17 +104,7 @@ export function TemplateDetailPresenter({
               </div>
               {isOwner && (
                 <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onEdit}
-                    disabled={template.isUsed}
-                    title={
-                      template.isUsed
-                        ? "ノートで使用中のため編集できません"
-                        : ""
-                    }
-                  >
+                  <Button variant="outline" size="sm" onClick={onEdit}>
                     <Edit className="w-4 h-4 mr-1" />
                     編集
                   </Button>
@@ -156,6 +154,27 @@ export function TemplateDetailPresenter({
               </div>
             </div>
 
+            <div>
+              <h3 className="text-sm text-muted-foreground mb-2">
+                Notionのページ
+              </h3>
+              {template.notionParentPageUrl ? (
+                <a
+                  href={template.notionParentPageUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline break-all"
+                >
+                  {template.notionParentPageUrl}
+                  <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                </a>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  未設定です。設定すると、このテンプレートで作ったノートを公開したときにNotionへ連携されます。
+                </p>
+              )}
+            </div>
+
             {template.isUsed && isOwner && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
                 <Check className="w-4 h-4 text-blue-600 mt-0.5" />
@@ -163,7 +182,9 @@ export function TemplateDetailPresenter({
                   <p className="font-medium">
                     このテンプレートはノートで使用されています
                   </p>
-                  <p className="mt-1">編集・削除はできません。</p>
+                  <p className="mt-1">
+                    削除はできません。使用中の項目を消す編集もできません。
+                  </p>
                 </div>
               </div>
             )}

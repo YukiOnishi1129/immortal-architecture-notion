@@ -12,14 +12,6 @@ export async function generateMetadata({
   const id = (await params).id;
   const template = await getTemplateByIdQuery({ id });
 
-  // If template is used, don't generate edit metadata
-  if (template?.isUsed) {
-    return {
-      title: `${template.name} | Mini Notion`,
-      description: "設計メモを構造化して残すミニノートアプリ",
-    };
-  }
-
   return {
     title: template
       ? `${template.name}を編集 | Mini Notion`

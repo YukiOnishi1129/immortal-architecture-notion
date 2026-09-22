@@ -34,6 +34,7 @@ export function TemplateEditFormContainer({
       fields={fields}
       templateName={template?.name}
       templateId={templateId}
+      isUsed={template?.isUsed ?? false}
       isSubmitting={isSubmitting}
       onSubmit={handleSubmit}
       onCancel={handleCancel}

@@ -21,6 +21,8 @@ export interface Template {
   isUsed?: boolean;
   createdAt?: string;
   updatedAt: string;
+  /** Notionの置き場所となる親ページのURL。未連携なら null。 */
+  notionParentPageUrl?: string | null;
 }
 
 export interface TemplateFilters {

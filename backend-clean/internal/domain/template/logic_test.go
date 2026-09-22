@@ -194,3 +194,100 @@ func TestValidateTemplateOwnership(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateFieldsChange(t *testing.T) {
+	current := []Field{
+		{ID: "f1", Label: "項目1", Order: 1, IsRequired: true},
+		{ID: "f2", Label: "項目2", Order: 2, IsRequired: false},
+	}
+
+	// Both existing fields already hold note content.
+	usedIDs := []string{"f1", "f2"}
+
+	tests := []struct {
+		name      string
+		incoming  []Field
+		used      []string
+		wantError error
+	}{
+		{
+			name:     "[Success] unchanged",
+			incoming: []Field{current[0], current[1]},
+		},
+		{
+			name: "[Success] a new field is added",
+			incoming: []Field{
+				current[0], current[1],
+				{ID: "", Label: "項目3", Order: 3},
+			},
+		},
+		{
+			name: "[Success] reordering keeps every field",
+			incoming: []Field{
+				{ID: "f2", Label: "項目2", Order: 1, IsRequired: false},
+				{ID: "f1", Label: "項目1", Order: 2, IsRequired: true},
+			},
+		},
+		{
+			name: "[Success] an unused field can be renamed",
+			incoming: []Field{
+				{ID: "f1", Label: "書き換えた", Order: 1, IsRequired: true},
+				current[1],
+			},
+			used: []string{"f2"},
+		},
+		{
+			name:     "[Success] an unused field can be removed",
+			incoming: []Field{current[0]},
+			used:     []string{"f1"},
+		},
+		{
+			name: "[Fail] a label is changed",
+			incoming: []Field{
+				{ID: "f1", Label: "書き換えた", Order: 1, IsRequired: true},
+				current[1],
+			},
+			wantError: domainerr.ErrTemplateInUse,
+		},
+		{
+			name: "[Fail] required flag is changed",
+			incoming: []Field{
+				{ID: "f1", Label: "項目1", Order: 1, IsRequired: false},
+				current[1],
+			},
+			wantError: domainerr.ErrTemplateInUse,
+		},
+		{
+			name:      "[Fail] a field is removed",
+			incoming:  []Field{current[0]},
+			wantError: domainerr.ErrTemplateInUse,
+		},
+		{
+			name: "[Success] an unknown id is treated as a new field",
+			incoming: []Field{
+				current[0], current[1],
+				{ID: "ghost", Label: "項目3", Order: 3},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			used := tt.used
+			if used == nil {
+				used = usedIDs
+			}
+			err := ValidateFieldsChange(current, tt.incoming, used)
+
+			if tt.wantError != nil {
+				if !errors.Is(err, tt.wantError) {
+					t.Fatalf("want %v, got %v", tt.wantError, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		})
+	}
+}

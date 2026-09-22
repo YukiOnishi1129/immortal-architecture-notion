@@ -18,6 +18,7 @@ export function useTemplateNewForm() {
     defaultValues: {
       name: "",
       fields: [],
+      notionParentPageUrl: "",
     },
   });
 
@@ -38,6 +39,7 @@ export function useTemplateNewForm() {
         const result = await createTemplateCommandAction({
           name: data.name,
           fields,
+          notionParentPageUrl: data.notionParentPageUrl.trim(),
         });
 
         if (result?.id) {

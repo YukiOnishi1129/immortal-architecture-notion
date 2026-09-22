@@ -176,26 +176,71 @@ func (r *TemplateRepository) Delete(ctx context.Context, id string) error {
 }
 
 // ReplaceFields replaces template fields.
+// ReplaceFields makes the stored fields match the given ones.
+//
+// Fields are updated in place rather than deleted and re-created, because a
+// field that a note already has a section for cannot be deleted: the section
+// references it. Re-creating every field would therefore fail as soon as the
+// template is in use, which also blocks edits that leave the fields alone,
+// such as renaming the template or setting its Notion parent page.
 func (r *TemplateRepository) ReplaceFields(ctx context.Context, templateID string, fields []template.Field) error {
 	pgID, err := toUUID(templateID)
 	if err != nil {
 		return err
 	}
 	q := queriesForContext(ctx, r.queries)
-	if err := q.DeleteFieldsByTemplate(ctx, pgID); err != nil {
+
+	existing, err := q.ListFieldsByTemplate(ctx, pgID)
+	if err != nil {
 		return err
 	}
+	existingByID := make(map[string]*generated.Field, len(existing))
+	for _, row := range existing {
+		existingByID[uuidToString(row.ID)] = row
+	}
+
+	kept := make(map[string]bool, len(fields))
 	for idx, f := range fields {
 		order := f.Order
 		if order == 0 {
 			order = idx + 1
 		}
+
+		// A field carrying a known id is an existing one being edited.
+		if f.ID != "" && existingByID[f.ID] != nil {
+			fieldID, err := toUUID(f.ID)
+			if err != nil {
+				return err
+			}
+			if _, err := q.UpdateField(ctx, &generated.UpdateFieldParams{
+				ID:         fieldID,
+				Label:      f.Label,
+				Order:      int32(order), //nolint:gosec
+				IsRequired: f.IsRequired,
+			}); err != nil {
+				return err
+			}
+			kept[f.ID] = true
+			continue
+		}
+
 		if _, err := q.CreateField(ctx, &generated.CreateFieldParams{
 			TemplateID: pgID,
 			Label:      f.Label,
 			Order:      int32(order), //nolint:gosec
 			IsRequired: f.IsRequired,
 		}); err != nil {
+			return err
+		}
+	}
+
+	// Whatever the caller left out is removed. This still fails when a note
+	// uses the field, which is the intended protection.
+	for id, row := range existingByID {
+		if kept[id] {
+			continue
+		}
+		if err := q.DeleteField(ctx, row.ID); err != nil {
 			return err
 		}
 	}
@@ -217,4 +262,21 @@ func (r *TemplateRepository) listFields(ctx context.Context, templateID pgtype.U
 		})
 	}
 	return fields, nil
+}
+
+// UsedFieldIDs returns the fields of a template that notes reference.
+func (r *TemplateRepository) UsedFieldIDs(ctx context.Context, templateID string) ([]string, error) {
+	pgID, err := toUUID(templateID)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := queriesForContext(ctx, r.queries).ListUsedFieldIDsByTemplate(ctx, pgID)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]string, 0, len(rows))
+	for _, id := range rows {
+		ids = append(ids, uuidToString(id))
+	}
+	return ids, nil
 }

@@ -20,7 +20,7 @@ func handleError(ctx echo.Context, err error) error {
 		return ctx.JSON(http.StatusForbidden, openapi.ModelsForbiddenError{Code: openapi.ModelsForbiddenErrorCodeFORBIDDEN, Message: err.Error()})
 	case errors.Is(err, account.ErrInvalidEmail), errors.Is(err, account.ErrInvalidName):
 		return ctx.JSON(http.StatusBadRequest, openapi.ModelsBadRequestError{Code: openapi.ModelsBadRequestErrorCodeBADREQUEST, Message: err.Error()})
-	case errors.Is(err, domainerr.ErrInvalidStatus) || errors.Is(err, domainerr.ErrInvalidStatusChange) || errors.Is(err, domainerr.ErrInvalidTemplateField) || errors.Is(err, domainerr.ErrNotionParentNotSet) || errors.Is(err, domainerr.ErrInvalidNotionParentURL):
+	case isBadRequest(err):
 		return ctx.JSON(http.StatusBadRequest, openapi.ModelsBadRequestError{Code: openapi.ModelsBadRequestErrorCodeBADREQUEST, Message: err.Error()})
 	case errors.Is(err, domainerr.ErrNotionSyncFailed):
 		// The note was left untouched, so retrying the same action is safe.
@@ -32,6 +32,27 @@ func handleError(ctx echo.Context, err error) error {
 	default:
 		return ctx.JSON(http.StatusInternalServerError, openapi.ModelsErrorResponse{Code: "INTERNAL_ERROR", Message: err.Error()})
 	}
+}
+
+// isBadRequest reports whether the error is the caller's fault rather than a
+// server failure. Everything listed here is rejected before anything is
+// written, so the client can fix the request and retry.
+func isBadRequest(err error) bool {
+	for _, target := range []error{
+		domainerr.ErrInvalidStatus,
+		domainerr.ErrInvalidStatusChange,
+		domainerr.ErrInvalidTemplateField,
+		domainerr.ErrFieldRequired,
+		domainerr.ErrTemplateInUse,
+		domainerr.ErrTemplateNameRequired,
+		domainerr.ErrNotionParentNotSet,
+		domainerr.ErrInvalidNotionParentURL,
+	} {
+		if errors.Is(err, target) {
+			return true
+		}
+	}
+	return false
 }
 
 func currentAccountID(ctx echo.Context) (string, error) {

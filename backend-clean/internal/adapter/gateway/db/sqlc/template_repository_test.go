@@ -207,43 +207,103 @@ func TestTemplateRepository_List(t *testing.T) {
 }
 
 func TestTemplateRepository_ReplaceFields(t *testing.T) {
-	now := time.Now().UTC().Truncate(time.Second)
 	tplID := pgtype.UUID{Bytes: [16]byte{1}, Valid: true}
-	fieldRow := &generated.Field{
-		ID:         pgtype.UUID{Bytes: [16]byte{2}, Valid: true},
-		TemplateID: tplID,
-		Label:      "lbl",
-		Order:      1,
-		IsRequired: true,
+	existingID := pgtype.UUID{Bytes: [16]byte{2}, Valid: true}
+	existing := &generated.Field{
+		ID: existingID, TemplateID: tplID, Label: "old", Order: 1, IsRequired: true,
 	}
+	returnedRow := &generated.Field{
+		ID: existingID, TemplateID: tplID, Label: "lbl", Order: 1, IsRequired: true,
+	}
+
 	tests := []struct {
-		name    string
-		tplID   string
-		field   template.Field
-		rowErr  error
-		execErr error
+		name string
+
+		tplID    string
+		fields   []template.Field
+		existing []*generated.Field
+		rowErr   error
+		execErr  error
+		queryErr error
+
 		wantErr bool
 	}{
-		{name: "[Success] replace fields", tplID: tplID.String(), field: template.Field{Label: "lbl", Order: 1, IsRequired: true}},
-		{name: "[Fail] invalid tpl uuid", tplID: "bad-uuid", field: template.Field{Label: "lbl"}, wantErr: true},
-		{name: "[Fail] delete error", tplID: tplID.String(), field: template.Field{Label: "lbl"}, execErr: errors.New("del error"), wantErr: true},
-		{name: "[Fail] create error", tplID: tplID.String(), field: template.Field{Label: "lbl"}, rowErr: errors.New("create error"), wantErr: true},
+		{
+			// A field carrying a known id is updated, never deleted, so a
+			// template already used by a note can still be edited.
+			name:     "[Success] existing field is updated in place",
+			tplID:    tplID.String(),
+			fields:   []template.Field{{ID: existingID.String(), Label: "lbl", Order: 1, IsRequired: true}},
+			existing: []*generated.Field{existing},
+		},
+		{
+			name:   "[Success] new field is created",
+			tplID:  tplID.String(),
+			fields: []template.Field{{Label: "lbl", Order: 1, IsRequired: true}},
+		},
+		{
+			name:     "[Success] field left out is deleted",
+			tplID:    tplID.String(),
+			fields:   []template.Field{{Label: "another", Order: 1}},
+			existing: []*generated.Field{existing},
+		},
+		{
+			name:    "[Fail] invalid template uuid",
+			tplID:   "bad-uuid",
+			fields:  []template.Field{{Label: "lbl"}},
+			wantErr: true,
+		},
+		{
+			name:     "[Fail] listing existing fields fails",
+			tplID:    tplID.String(),
+			fields:   []template.Field{{Label: "lbl"}},
+			queryErr: errors.New("list error"),
+			wantErr:  true,
+		},
+		{
+			name:     "[Fail] delete error",
+			tplID:    tplID.String(),
+			fields:   []template.Field{{Label: "another"}},
+			existing: []*generated.Field{existing},
+			execErr:  errors.New("del error"),
+			wantErr:  true,
+		},
+		{
+			name:    "[Fail] create error",
+			tplID:   tplID.String(),
+			fields:  []template.Field{{Label: "lbl"}},
+			rowErr:  errors.New("create error"),
+			wantErr: true,
+		},
+		{
+			name:     "[Fail] update error",
+			tplID:    tplID.String(),
+			fields:   []template.Field{{ID: existingID.String(), Label: "lbl"}},
+			existing: []*generated.Field{existing},
+			rowErr:   errors.New("update error"),
+			wantErr:  true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mock := mockdb.NewTemplateDBTX(nil, nil, tt.rowErr, tt.execErr)
-			mock.FieldRow = fieldRow
+			mock.FieldRow = returnedRow
+			mock.ExistingFields = tt.existing
+			mock.QueryErr = tt.queryErr
+
 			repo := &TemplateRepository{queries: generated.New(mock)}
-			err := repo.ReplaceFields(context.Background(), tt.tplID, []template.Field{tt.field})
+			err := repo.ReplaceFields(context.Background(), tt.tplID, tt.fields)
+
 			if tt.wantErr {
 				if err == nil {
 					t.Fatalf("expected error, got nil")
 				}
-			} else if err != nil {
+				return
+			}
+			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			_ = now
 		})
 	}
 }
