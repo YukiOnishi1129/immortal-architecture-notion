@@ -4,7 +4,7 @@ package notion
 import "time"
 
 // Sync represents the link between a note and its Notion page.
-// PageID is nil until the note is published for the first time.
+// PageID is nil until the note is synced to Notion for the first time.
 type Sync struct {
 	NoteID   string
 	PageID   *string

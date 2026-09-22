@@ -37,8 +37,8 @@ func ExtractPageID(rawURL string) (string, error) {
 		return "", domainerr.ErrNotionParentNotSet
 	}
 
-	// Query strings may contain other ids (for example ?v=<view id>),
-	// so only the path is inspected.
+	// Query strings and fragments may contain other ids (for example
+	// ?v=<view id>), so they are stripped before scanning.
 	if idx := strings.IndexAny(trimmed, "?#"); idx >= 0 {
 		trimmed = trimmed[:idx]
 	}
@@ -54,9 +54,8 @@ func ExtractPageID(rawURL string) (string, error) {
 }
 
 // ValidateParentPageID checks that a stored parent page id is usable.
+// The id must be a well-formed Notion page id, not merely non-empty.
 func ValidateParentPageID(pageID string) error {
-	if strings.TrimSpace(pageID) == "" {
-		return domainerr.ErrNotionParentNotSet
-	}
-	return nil
+	_, err := ExtractPageID(pageID)
+	return err
 }

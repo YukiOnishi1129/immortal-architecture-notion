@@ -173,9 +173,39 @@ func TestValidateParentPageID(t *testing.T) {
 		pageID    string
 		wantError error
 	}{
-		{name: "[Success] valid id", pageID: "1429989fe8ac4effbc8f57f56486db54"},
-		{name: "[Fail] empty", pageID: "", wantError: domainerr.ErrNotionParentNotSet},
-		{name: "[Fail] whitespace only", pageID: "  ", wantError: domainerr.ErrNotionParentNotSet},
+		{
+			name:   "[Success] valid id",
+			pageID: "1429989fe8ac4effbc8f57f56486db54",
+		},
+		{
+			name:   "[Success] hyphenated id",
+			pageID: "1429989f-e8ac-4eff-bc8f-57f56486db54",
+		},
+		{
+			name:      "[Fail] empty",
+			pageID:    "",
+			wantError: domainerr.ErrNotionParentNotSet,
+		},
+		{
+			name:      "[Fail] whitespace only",
+			pageID:    "  ",
+			wantError: domainerr.ErrNotionParentNotSet,
+		},
+		{
+			name:      "[Fail] not a page id at all",
+			pageID:    "abc",
+			wantError: domainerr.ErrNotionParentNotSet,
+		},
+		{
+			name:      "[Fail] too short",
+			pageID:    "1429989fe8ac",
+			wantError: domainerr.ErrNotionParentNotSet,
+		},
+		{
+			name:      "[Fail] contains non-hex characters",
+			pageID:    "zzzz989fe8ac4effbc8f57f56486db54",
+			wantError: domainerr.ErrNotionParentNotSet,
+		},
 	}
 
 	for _, tt := range tests {
