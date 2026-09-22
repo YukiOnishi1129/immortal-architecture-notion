@@ -118,6 +118,24 @@ func (u *NoteCommandInteractor) Update(ctx context.Context, input port.NoteUpdat
 		return domainerr.ErrTitleRequired
 	}
 
+	// Sections are validated before Notion is called. Validating inside the
+	// transaction would be too late: the page would already hold content that
+	// the rejected update never stores, leaving the two out of step.
+	var sections []note.Section
+	if input.Sections != nil {
+		tpl, err := u.templates.Get(ctx, current.Note.TemplateID)
+		if err != nil {
+			return err
+		}
+		sections, err = buildSectionsForUpdate(current.Sections, tpl.Template.Fields, input.Sections, current.Note.ID)
+		if err != nil {
+			return err
+		}
+		if err := note.ValidateSections(tpl.Template.Fields, sections); err != nil {
+			return err
+		}
+	}
+
 	// The Notion page must reflect what is about to be saved, so the edited
 	// content is assembled before the call.
 	edited := u.editedNote(current, input)
@@ -134,18 +152,7 @@ func (u *NoteCommandInteractor) Update(ctx context.Context, input port.NoteUpdat
 		if err != nil {
 			return err
 		}
-		if input.Sections != nil {
-			tpl, err := u.templates.Get(ctx, current.Note.TemplateID)
-			if err != nil {
-				return err
-			}
-			sections, err := buildSectionsForUpdate(current.Sections, tpl.Template.Fields, input.Sections, current.Note.ID)
-			if err != nil {
-				return err
-			}
-			if err := note.ValidateSections(tpl.Template.Fields, sections); err != nil {
-				return err
-			}
+		if sections != nil {
 			if err := u.notes.ReplaceSections(txCtx, input.ID, sections); err != nil {
 				return err
 			}

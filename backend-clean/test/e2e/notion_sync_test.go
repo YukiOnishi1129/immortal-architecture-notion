@@ -342,3 +342,41 @@ func pageIDFromURL(url string) string {
 	}
 	return url[len(prefix):]
 }
+
+// An update the application rejects must not reach Notion. The validation
+// happens after the page would be written, so an invalid request could
+// otherwise leave the page holding content the note never stored.
+func TestE2E_RejectedEditDoesNotTouchNotion(t *testing.T) {
+	a := newApp(t)
+	owner := seedAccount(t)
+	tpl := a.createTemplate(owner, linkedTemplate)
+	n := a.createNote(owner, tpl, draftNote)
+	a.publish(n.ID, owner).expect(t, http.StatusOK)
+
+	published := a.getNote(n.ID, owner)
+	pageID := pageIDFromURL(*published.NotionPageURL)
+	a.notion.resetCalls()
+
+	// A section id that does not belong to this note.
+	res := a.updateNote(n.ID, owner, noteInput{Title: "Broken edit", Body: "nope"},
+		"11111111-1111-1111-1111-111111111111")
+	if res.code == http.StatusOK {
+		t.Fatalf("the update was accepted, want a rejection: %s", res.body)
+	}
+
+	// The stored note must be untouched...
+	got := a.getNote(n.ID, owner)
+	if got.Title != draftNote.Title {
+		t.Fatalf("title = %q, want %q (the edit was rejected)", got.Title, draftNote.Title)
+	}
+
+	// ...and so must the Notion page.
+	page := a.notion.page(pageID)
+	if page.title != draftNote.Title {
+		t.Fatalf("notion title = %q, want %q: a rejected edit reached Notion",
+			page.title, draftNote.Title)
+	}
+	if calls := a.notion.callNames(); len(calls) != 0 {
+		t.Fatalf("notion calls = %v, want none for a rejected edit", calls)
+	}
+}

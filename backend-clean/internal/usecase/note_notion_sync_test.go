@@ -346,6 +346,54 @@ func TestUpdate_DraftDoesNotTouchNotion(t *testing.T) {
 	}
 }
 
+// An update the application rejects must not reach Notion. Validation has to
+// happen before the call, because a rejected update rolls the database back
+// while the Notion page would keep the content it was sent.
+func TestUpdate_RejectedSectionsNeverReachNotion(t *testing.T) {
+	tests := []struct {
+		name      string
+		sections  []port.SectionUpdateInput
+		wantError error
+	}{
+		{
+			name:      "[Fail] unknown section id",
+			sections:  []port.SectionUpdateInput{{SectionID: "does-not-exist", Content: "x"}},
+			wantError: domainerr.ErrSectionsMissing,
+		},
+		{
+			name:      "[Fail] required section is empty",
+			sections:  []port.SectionUpdateInput{{SectionID: "sec-1", Content: ""}},
+			wantError: domainerr.ErrRequiredFieldEmpty,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			d := newNotionDeps(ctrl)
+			current := syncNoteWithMeta(note.StatusPublish, strptr(testNotionPageID))
+
+			d.notes.EXPECT().Get(gomock.Any(), "note-1").Return(current, nil)
+			d.templates.EXPECT().Get(gomock.Any(), "tpl-1").Return(&template.WithUsage{
+				Template: template.Template{
+					ID: "tpl-1", OwnerID: "owner-1",
+					Fields: []template.Field{{ID: "f1", Label: "Field", Order: 1, IsRequired: true}},
+				},
+			}, nil)
+			// No notion call and no transaction: gomock fails the test on either.
+
+			err := d.interactor().Update(context.Background(), port.NoteUpdateInput{
+				ID: "note-1", OwnerID: "owner-1", Title: "New title", Sections: tt.sections,
+			})
+			if !errors.Is(err, tt.wantError) {
+				t.Fatalf("want %v, got %v", tt.wantError, err)
+			}
+		})
+	}
+}
+
 // QA-12: deleting a note leaves the Notion page alone.
 func TestDelete_LeavesNotionPage(t *testing.T) {
 	ctrl := gomock.NewController(t)

@@ -249,7 +249,8 @@ func TestNoteCommandInteractor_Update(t *testing.T) {
 			current:   noteWithMeta("note-1", "owner-1", note.StatusDraft),
 			tplErr:    domainerr.ErrNotFound,
 			wantError: domainerr.ErrNotFound,
-			expectTx:  true,
+			// Sections are validated up front, so this never reaches the transaction.
+			expectTx: false,
 		},
 		{
 			name: "[Fail] unknown section id",
@@ -262,7 +263,7 @@ func TestNoteCommandInteractor_Update(t *testing.T) {
 			current:   noteWithMeta("note-1", "owner-1", note.StatusDraft),
 			tpl:       templateWithUsage(),
 			wantError: domainerr.ErrSectionsMissing,
-			expectTx:  true,
+			expectTx:  false,
 		},
 		{
 			// 現状の仕様: ValidateSections は Content == "" のみを空と判定する
@@ -290,7 +291,7 @@ func TestNoteCommandInteractor_Update(t *testing.T) {
 			current:   noteWithMeta("note-1", "owner-1", note.StatusDraft),
 			tpl:       templateWithUsage(),
 			wantError: domainerr.ErrRequiredFieldEmpty,
-			expectTx:  true,
+			expectTx:  false,
 		},
 		{
 			name: "[Fail] replace sections error",
@@ -322,19 +323,21 @@ func TestNoteCommandInteractor_Update(t *testing.T) {
 
 			notes.EXPECT().Get(gomock.Any(), tt.input.ID).Return(tt.current, tt.getErr)
 
+			// Sections are validated before the transaction opens, so the
+			// template is fetched there too.
+			if tt.getErr == nil && tt.input.Sections != nil && tt.input.Title != "" {
+				templates.EXPECT().Get(gomock.Any(), tt.current.Note.TemplateID).
+					Return(tt.tpl, tt.tplErr)
+			}
+
 			if tt.expectTx {
 				runInTx(tx)
 				notes.EXPECT().Update(gomock.Any(), gomock.Any()).
 					Return(&tt.current.Note, tt.updateErr)
 
-				if tt.updateErr == nil && tt.input.Sections != nil {
-					templates.EXPECT().Get(gomock.Any(), tt.current.Note.TemplateID).
-						Return(tt.tpl, tt.tplErr)
-
-					if tt.expectReplace {
-						notes.EXPECT().ReplaceSections(gomock.Any(), tt.input.ID, gomock.Any()).
-							Return(tt.replaceErr)
-					}
+				if tt.updateErr == nil && tt.expectReplace {
+					notes.EXPECT().ReplaceSections(gomock.Any(), tt.input.ID, gomock.Any()).
+						Return(tt.replaceErr)
 				}
 
 				// the read model is synced only when everything above succeeded

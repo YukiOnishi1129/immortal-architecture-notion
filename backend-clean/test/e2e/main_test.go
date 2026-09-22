@@ -29,33 +29,49 @@ const (
 	dbPassword    = "e2e"
 	dbName        = "mini_notion_e2e"
 	hostPort      = "55433"
+
+	// setupTimeout bounds starting the container and migrating it.
+	setupTimeout = 2 * time.Minute
+	// readyTimeout bounds waiting for the database to accept connections.
+	readyTimeout = 60 * time.Second
 )
 
 var testPool *pgxpool.Pool
 
 func TestMain(m *testing.M) {
-	ctx := context.Background()
+	// Bring the database up under a deadline. A hung Docker daemon would
+	// otherwise block the whole run with no output, which is painful in CI.
+	// os.Exit skips deferred calls, so the context is released explicitly
+	// before the tests start rather than with defer.
+	setupCtx, cancelSetup := context.WithTimeout(context.Background(), setupTimeout)
 
-	dsn, stop, err := startPostgres(ctx)
+	dsn, stop, err := startPostgres(setupCtx)
 	if err != nil {
+		cancelSetup()
 		fmt.Fprintf(os.Stderr, "e2e: cannot start postgres: %v\n", err)
 		os.Exit(1)
 	}
 
-	pool, err := pgxpool.New(ctx, dsn)
+	pool, err := pgxpool.New(setupCtx, dsn)
 	if err != nil {
+		cancelSetup()
 		stop()
 		fmt.Fprintf(os.Stderr, "e2e: cannot connect: %v\n", err)
 		os.Exit(1)
 	}
 	testPool = pool
 
-	if err := applyMigrations(ctx, pool); err != nil {
+	if err := applyMigrations(setupCtx, pool); err != nil {
+		cancelSetup()
 		pool.Close()
 		stop()
 		fmt.Fprintf(os.Stderr, "e2e: migrations failed: %v\n", err)
 		os.Exit(1)
 	}
+
+	// The deadline covers setup only: the tests must not inherit it, and the
+	// teardown below still has to run after a slow suite.
+	cancelSetup()
 
 	code := m.Run()
 
@@ -97,8 +113,14 @@ func startPostgres(ctx context.Context) (string, func(), error) {
 }
 
 func waitForPostgres(ctx context.Context, dsn string) error {
-	deadline := time.Now().Add(60 * time.Second)
+	deadline := time.Now().Add(readyTimeout)
 	for time.Now().Before(deadline) {
+		// Stop early when the caller's deadline has already passed, instead of
+		// retrying against a context that can no longer succeed.
+		if err := ctx.Err(); err != nil {
+			return fmt.Errorf("waiting for postgres: %w", err)
+		}
+
 		pool, err := pgxpool.New(ctx, dsn)
 		if err == nil {
 			pingErr := pool.Ping(ctx)
@@ -109,7 +131,7 @@ func waitForPostgres(ctx context.Context, dsn string) error {
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
-	return fmt.Errorf("postgres did not become ready in time")
+	return fmt.Errorf("postgres did not become ready within %s", readyTimeout)
 }
 
 // applyMigrations runs the .up.sql files in order, so the schema under test is
