@@ -7,13 +7,25 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
+	notionclient "immortal-architecture-notion/backend/internal/adapter/gateway/externalapi/notion"
 	httpcontroller "immortal-architecture-notion/backend/internal/adapter/http/controller"
 	openapi "immortal-architecture-notion/backend/internal/adapter/http/generated/openapi"
 	"immortal-architecture-notion/backend/internal/driver/config"
 	driverdb "immortal-architecture-notion/backend/internal/driver/db"
 	"immortal-architecture-notion/backend/internal/driver/factory"
 	httpfactory "immortal-architecture-notion/backend/internal/driver/factory/http"
+	"immortal-architecture-notion/backend/internal/port"
 )
+
+// newNotionClient builds the Notion client, or returns nil when no API key is
+// configured. Returning a typed nil here would make the interface non-nil, so
+// the nil interface is returned explicitly.
+func newNotionClient(cfg *config.Config) port.NotionClient {
+	if cfg.NotionAPIKey == "" {
+		return nil
+	}
+	return notionclient.NewClient(cfg.NotionAPIKey)
+}
 
 // BuildServer composes all dependencies and returns an Echo server, config, and cleanup function.
 func BuildServer(ctx context.Context) (*echo.Echo, *config.Config, func(), error) {
@@ -45,7 +57,7 @@ func BuildServer(ctx context.Context) (*echo.Echo, *config.Config, func(), error
 
 	accountInputFactory := factory.NewAccountInputFactory()
 	templateInputFactory := factory.NewTemplateInputFactory()
-	noteCommandInputFactory := factory.NewNoteCommandInputFactory()
+	noteCommandInputFactory := factory.NewNoteCommandInputFactory(newNotionClient(cfg))
 	noteQueryInputFactory := factory.NewNoteQueryInputFactory()
 
 	e := echo.New()

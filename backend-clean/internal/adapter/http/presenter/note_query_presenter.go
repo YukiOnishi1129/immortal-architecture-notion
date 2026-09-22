@@ -71,9 +71,10 @@ func readModelToResponse(n note.ReadModel) openapi.ModelsNoteResponse {
 			LastName:  n.OwnerLastName,
 			Thumbnail: n.OwnerThumbnail,
 		},
-		Status:    openapi.ModelsNoteStatus(n.Status),
-		Sections:  sections,
-		CreatedAt: n.CreatedAt,
-		UpdatedAt: n.UpdatedAt,
+		Status:        openapi.ModelsNoteStatus(n.Status),
+		Sections:      sections,
+		CreatedAt:     n.CreatedAt,
+		UpdatedAt:     n.UpdatedAt,
+		NotionPageUrl: n.NotionPageURL,
 	}
 }

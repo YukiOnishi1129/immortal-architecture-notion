@@ -17,6 +17,10 @@ type NoteCommandInteractor struct {
 	templates     port.TemplateRepository
 	tx            port.TxManager
 	output        port.NoteCommandOutputPort
+
+	// notion is nil when the integration is not configured.
+	// Notes stay fully usable in that case; only syncing is skipped.
+	notion port.NotionClient
 }
 
 var _ port.NoteCommandInputPort = (*NoteCommandInteractor)(nil)
@@ -28,6 +32,7 @@ func NewNoteCommandInteractor(
 	templates port.TemplateRepository,
 	tx port.TxManager,
 	output port.NoteCommandOutputPort,
+	notionClient port.NotionClient,
 ) *NoteCommandInteractor {
 	return &NoteCommandInteractor{
 		notes:         notes,
@@ -35,6 +40,7 @@ func NewNoteCommandInteractor(
 		templates:     templates,
 		tx:            tx,
 		output:        output,
+		notion:        notionClient,
 	}
 }
 
@@ -112,6 +118,32 @@ func (u *NoteCommandInteractor) Update(ctx context.Context, input port.NoteUpdat
 		return domainerr.ErrTitleRequired
 	}
 
+	// Sections are validated before Notion is called. Validating inside the
+	// transaction would be too late: the page would already hold content that
+	// the rejected update never stores, leaving the two out of step.
+	var sections []note.Section
+	if input.Sections != nil {
+		tpl, err := u.templates.Get(ctx, current.Note.TemplateID)
+		if err != nil {
+			return err
+		}
+		sections, err = buildSectionsForUpdate(current.Sections, tpl.Template.Fields, input.Sections, current.Note.ID)
+		if err != nil {
+			return err
+		}
+		if err := note.ValidateSections(tpl.Template.Fields, sections); err != nil {
+			return err
+		}
+	}
+
+	// The Notion page must reflect what is about to be saved, so the edited
+	// content is assembled before the call.
+	edited := u.editedNote(current, input)
+	synced, err := u.syncEdit(ctx, edited)
+	if err != nil {
+		return err
+	}
+
 	err = u.tx.WithinTransaction(ctx, func(txCtx context.Context) error {
 		_, err := u.notes.Update(txCtx, note.Note{
 			ID:    input.ID,
@@ -120,19 +152,15 @@ func (u *NoteCommandInteractor) Update(ctx context.Context, input port.NoteUpdat
 		if err != nil {
 			return err
 		}
-		if input.Sections != nil {
-			tpl, err := u.templates.Get(ctx, current.Note.TemplateID)
-			if err != nil {
-				return err
-			}
-			sections, err := buildSectionsForUpdate(current.Sections, tpl.Template.Fields, input.Sections, current.Note.ID)
-			if err != nil {
-				return err
-			}
-			if err := note.ValidateSections(tpl.Template.Fields, sections); err != nil {
-				return err
-			}
+		if sections != nil {
 			if err := u.notes.ReplaceSections(txCtx, input.ID, sections); err != nil {
+				return err
+			}
+		}
+
+		if synced != nil {
+			if err := u.notes.SaveNotionPage(txCtx, input.ID,
+				synced.pageID, synced.pageURL, synced.syncedAt); err != nil {
 				return err
 			}
 		}
@@ -179,16 +207,41 @@ func (u *NoteCommandInteractor) ChangeStatus(ctx context.Context, input port.Not
 		return err
 	}
 
-	if _, err := u.notes.UpdateStatus(ctx, input.ID, input.Status); err != nil {
-		return err
-	}
-
-	// Synchronize read model
-	n, err := u.notes.Get(ctx, input.ID)
+	// Notion is called first, outside any transaction. If it fails the
+	// database is untouched and the note keeps its current status, which is
+	// the agreed behavior: a note is never published without its page.
+	synced, err := u.syncStatusChange(ctx, current, input.Status)
 	if err != nil {
 		return err
 	}
-	if err := u.readModelRepo.Upsert(ctx, toReadModel(n)); err != nil {
+
+	err = u.tx.WithinTransaction(ctx, func(txCtx context.Context) error {
+		if _, err := u.notes.UpdateStatus(txCtx, input.ID, input.Status); err != nil {
+			return err
+		}
+		if synced != nil {
+			if err := u.notes.SaveNotionPage(txCtx, input.ID,
+				synced.pageID, synced.pageURL, synced.syncedAt); err != nil {
+				return err
+			}
+		}
+
+		// Synchronize read model
+		updated, err := u.notes.Get(txCtx, input.ID)
+		if err != nil {
+			return err
+		}
+		return u.readModelRepo.Upsert(txCtx, toReadModel(updated))
+	})
+	if err != nil {
+		// A page created for this publish is now unreachable, since its id was
+		// never stored. Pages that already existed are left as they are.
+		u.discardCreatedPage(ctx, synced, err)
+		return err
+	}
+
+	n, err := u.notes.Get(ctx, input.ID)
+	if err != nil {
 		return err
 	}
 	return u.output.PresentNote(ctx, n)
@@ -242,5 +295,6 @@ func toReadModel(wm *note.WithMeta) note.ReadModel {
 		Sections:       sections,
 		CreatedAt:      wm.Note.CreatedAt,
 		UpdatedAt:      wm.Note.UpdatedAt,
+		NotionPageURL:  wm.Note.NotionPageURL,
 	}
 }

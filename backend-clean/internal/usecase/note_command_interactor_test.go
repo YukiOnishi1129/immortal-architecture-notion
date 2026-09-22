@@ -161,7 +161,7 @@ func TestNoteCommandInteractor_Create(t *testing.T) {
 				}
 			}
 
-			interactor := uc.NewNoteCommandInteractor(notes, readModels, templates, tx, output)
+			interactor := uc.NewNoteCommandInteractor(notes, readModels, templates, tx, output, nil)
 			err := interactor.Create(context.Background(), tt.input)
 
 			assertError(t, err, tt.wantError)
@@ -249,7 +249,8 @@ func TestNoteCommandInteractor_Update(t *testing.T) {
 			current:   noteWithMeta("note-1", "owner-1", note.StatusDraft),
 			tplErr:    domainerr.ErrNotFound,
 			wantError: domainerr.ErrNotFound,
-			expectTx:  true,
+			// Sections are validated up front, so this never reaches the transaction.
+			expectTx: false,
 		},
 		{
 			name: "[Fail] unknown section id",
@@ -262,7 +263,7 @@ func TestNoteCommandInteractor_Update(t *testing.T) {
 			current:   noteWithMeta("note-1", "owner-1", note.StatusDraft),
 			tpl:       templateWithUsage(),
 			wantError: domainerr.ErrSectionsMissing,
-			expectTx:  true,
+			expectTx:  false,
 		},
 		{
 			// 現状の仕様: ValidateSections は Content == "" のみを空と判定する
@@ -290,7 +291,7 @@ func TestNoteCommandInteractor_Update(t *testing.T) {
 			current:   noteWithMeta("note-1", "owner-1", note.StatusDraft),
 			tpl:       templateWithUsage(),
 			wantError: domainerr.ErrRequiredFieldEmpty,
-			expectTx:  true,
+			expectTx:  false,
 		},
 		{
 			name: "[Fail] replace sections error",
@@ -322,19 +323,21 @@ func TestNoteCommandInteractor_Update(t *testing.T) {
 
 			notes.EXPECT().Get(gomock.Any(), tt.input.ID).Return(tt.current, tt.getErr)
 
+			// Sections are validated before the transaction opens, so the
+			// template is fetched there too.
+			if tt.getErr == nil && tt.input.Sections != nil && tt.input.Title != "" {
+				templates.EXPECT().Get(gomock.Any(), tt.current.Note.TemplateID).
+					Return(tt.tpl, tt.tplErr)
+			}
+
 			if tt.expectTx {
 				runInTx(tx)
 				notes.EXPECT().Update(gomock.Any(), gomock.Any()).
 					Return(&tt.current.Note, tt.updateErr)
 
-				if tt.updateErr == nil && tt.input.Sections != nil {
-					templates.EXPECT().Get(gomock.Any(), tt.current.Note.TemplateID).
-						Return(tt.tpl, tt.tplErr)
-
-					if tt.expectReplace {
-						notes.EXPECT().ReplaceSections(gomock.Any(), tt.input.ID, gomock.Any()).
-							Return(tt.replaceErr)
-					}
+				if tt.updateErr == nil && tt.expectReplace {
+					notes.EXPECT().ReplaceSections(gomock.Any(), tt.input.ID, gomock.Any()).
+						Return(tt.replaceErr)
 				}
 
 				// the read model is synced only when everything above succeeded
@@ -346,7 +349,7 @@ func TestNoteCommandInteractor_Update(t *testing.T) {
 				}
 			}
 
-			interactor := uc.NewNoteCommandInteractor(notes, readModels, templates, tx, output)
+			interactor := uc.NewNoteCommandInteractor(notes, readModels, templates, tx, output, nil)
 			err := interactor.Update(context.Background(), tt.input)
 
 			assertError(t, err, tt.wantError)
@@ -450,21 +453,28 @@ func TestNoteCommandInteractor_ChangeStatus(t *testing.T) {
 			notes.EXPECT().Get(gomock.Any(), tt.input.ID).Return(tt.current, tt.getErr)
 
 			if tt.expectCall {
+				// The status update, the Notion page id and the read model are
+				// committed together, so they now run inside a transaction.
+				tx.EXPECT().WithinTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, fn func(context.Context) error) error { return fn(ctx) },
+				)
 				notes.EXPECT().UpdateStatus(gomock.Any(), tt.input.ID, tt.input.Status).
 					Return(&tt.current.Note, tt.updateErr)
 
 				if tt.updateErr == nil {
-					// ChangeStatus reloads the note after updating.
+					// The note is reloaded inside the transaction to build the
+					// read model, and again afterwards for the response.
 					notes.EXPECT().Get(gomock.Any(), tt.input.ID).Return(tt.current, nil)
 					readModels.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(tt.upsertErr)
 
 					if tt.upsertErr == nil {
+						notes.EXPECT().Get(gomock.Any(), tt.input.ID).Return(tt.current, nil)
 						output.EXPECT().PresentNote(gomock.Any(), tt.current).Return(nil)
 					}
 				}
 			}
 
-			interactor := uc.NewNoteCommandInteractor(notes, readModels, templates, tx, output)
+			interactor := uc.NewNoteCommandInteractor(notes, readModels, templates, tx, output, nil)
 			err := interactor.ChangeStatus(context.Background(), tt.input)
 
 			assertError(t, err, tt.wantError)
@@ -551,7 +561,7 @@ func TestNoteCommandInteractor_Delete(t *testing.T) {
 				}
 			}
 
-			interactor := uc.NewNoteCommandInteractor(notes, readModels, templates, tx, output)
+			interactor := uc.NewNoteCommandInteractor(notes, readModels, templates, tx, output, nil)
 			err := interactor.Delete(context.Background(), tt.noteID, tt.ownerID)
 
 			assertError(t, err, tt.wantError)

@@ -21,9 +21,12 @@ func NewTemplateInputFactory() func(repo port.TemplateRepository, tx port.TxMana
 }
 
 // NewNoteCommandInputFactory returns a factory for NoteCommandInteractor.
-func NewNoteCommandInputFactory() func(noteRepo port.NoteRepository, readModelRepo port.NoteReadModelRepository, tplRepo port.TemplateRepository, tx port.TxManager, output port.NoteCommandOutputPort) port.NoteCommandInputPort {
+//
+// notionClient is shared by every request and may be nil, which disables
+// syncing while leaving all note operations working.
+func NewNoteCommandInputFactory(notionClient port.NotionClient) func(noteRepo port.NoteRepository, readModelRepo port.NoteReadModelRepository, tplRepo port.TemplateRepository, tx port.TxManager, output port.NoteCommandOutputPort) port.NoteCommandInputPort {
 	return func(noteRepo port.NoteRepository, readModelRepo port.NoteReadModelRepository, tplRepo port.TemplateRepository, tx port.TxManager, output port.NoteCommandOutputPort) port.NoteCommandInputPort {
-		return usecase.NewNoteCommandInteractor(noteRepo, readModelRepo, tplRepo, tx, output)
+		return usecase.NewNoteCommandInteractor(noteRepo, readModelRepo, tplRepo, tx, output, notionClient)
 	}
 }
 

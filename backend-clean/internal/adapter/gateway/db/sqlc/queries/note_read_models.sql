@@ -16,8 +16,8 @@ WHERE id = $1;
 INSERT INTO note_read_models (
     id, title, status, template_id, template_name,
     owner_id, owner_first_name, owner_last_name, owner_thumbnail,
-    sections_json, created_at, updated_at
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    sections_json, created_at, updated_at, notion_page_url
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 ON CONFLICT (id) DO UPDATE SET
     title = EXCLUDED.title,
     status = EXCLUDED.status,
@@ -28,7 +28,8 @@ ON CONFLICT (id) DO UPDATE SET
     owner_last_name = EXCLUDED.owner_last_name,
     owner_thumbnail = EXCLUDED.owner_thumbnail,
     sections_json = EXCLUDED.sections_json,
-    updated_at = EXCLUDED.updated_at;
+    updated_at = EXCLUDED.updated_at,
+    notion_page_url = EXCLUDED.notion_page_url;
 
 -- name: DeleteNoteReadModel :exec
 DELETE FROM note_read_models

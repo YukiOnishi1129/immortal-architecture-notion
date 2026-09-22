@@ -18,6 +18,11 @@ type Config struct {
 
 	// CORS configuration
 	AllowedOrigins []string
+
+	// NotionAPIKey enables the Notion integration.
+	// Intentionally optional: a missing key must not stop the app from
+	// starting, it only disables syncing.
+	NotionAPIKey string
 }
 
 // Load reads configuration from environment variables.
@@ -42,6 +47,7 @@ func Load() (*Config, error) {
 		DatabaseURL:    dbURL,
 		ServerPort:     port,
 		AllowedOrigins: origins,
+		NotionAPIKey:   os.Getenv("NOTION_API_KEY"),
 	}, nil
 }
 

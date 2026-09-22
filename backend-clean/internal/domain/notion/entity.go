@@ -17,3 +17,20 @@ type Sync struct {
 type ParentPage struct {
 	PageID string
 }
+
+// Action is what needs to happen on the Notion side for a status change.
+type Action string
+
+// Actions derived from a note's status transition.
+const (
+	// ActionNone means Notion is left untouched.
+	ActionNone Action = "none"
+	// ActionCreate creates a new page under the template's parent page.
+	ActionCreate Action = "create"
+	// ActionRestore brings a previously trashed page back.
+	ActionRestore Action = "restore"
+	// ActionTrash moves the page to the Notion trash, keeping its id.
+	ActionTrash Action = "trash"
+	// ActionUpdate rewrites the title and content of an existing page.
+	ActionUpdate Action = "update"
+)

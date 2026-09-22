@@ -28,9 +28,10 @@ func toNoteResponse(n note.WithMeta) openapi.ModelsNoteResponse {
 			LastName:  n.OwnerLastName,
 			Thumbnail: n.OwnerThumbnail,
 		},
-		Status:    openapi.ModelsNoteStatus(n.Note.Status),
-		Sections:  sections,
-		CreatedAt: n.Note.CreatedAt,
-		UpdatedAt: n.Note.UpdatedAt,
+		Status:        openapi.ModelsNoteStatus(n.Note.Status),
+		Sections:      sections,
+		CreatedAt:     n.Note.CreatedAt,
+		UpdatedAt:     n.Note.UpdatedAt,
+		NotionPageUrl: n.Note.NotionPageURL,
 	}
 }
