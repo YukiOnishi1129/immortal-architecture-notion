@@ -227,8 +227,9 @@ func (u *NoteCommandInteractor) ChangeStatus(ctx context.Context, input port.Not
 		return u.readModelRepo.Upsert(txCtx, toReadModel(updated))
 	})
 	if err != nil {
-		// The page exists on Notion but its id was never stored, so clean it up.
-		u.cleanUpOrphanPage(ctx, synced, err)
+		// A page created for this publish is now unreachable, since its id was
+		// never stored. Pages that already existed are left as they are.
+		u.discardCreatedPage(ctx, synced, err)
 		return err
 	}
 

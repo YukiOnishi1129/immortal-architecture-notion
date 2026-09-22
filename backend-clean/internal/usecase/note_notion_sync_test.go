@@ -238,6 +238,31 @@ func TestChangeStatus_DBFailureCleansUpOrphanPage(t *testing.T) {
 	}
 }
 
+// A page that already existed must survive a database failure: it was not
+// created by this call, so trashing it would destroy published content.
+func TestChangeStatus_DBFailureKeepsRestoredPage(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := newNotionDeps(ctrl)
+	current := syncNoteWithMeta(note.StatusDraft, strptr(testNotionPageID))
+	dbErr := errors.New("db is down")
+
+	d.notes.EXPECT().Get(gomock.Any(), "note-1").Return(current, nil)
+	d.notion.EXPECT().Restore(gomock.Any(), testNotionPageID).
+		Return(&port.NotionPage{PageID: testNotionPageID, URL: testNotionURL}, nil)
+
+	d.expectTx()
+	d.notes.EXPECT().UpdateStatus(gomock.Any(), "note-1", note.StatusPublish).Return(nil, dbErr)
+	// No Trash call: gomock fails the test if the page is discarded.
+
+	if err := d.interactor().ChangeStatus(context.Background(), port.NoteStatusChangeInput{
+		ID: "note-1", OwnerID: "owner-1", Status: note.StatusPublish,
+	}); !errors.Is(err, dbErr) {
+		t.Fatalf("want db error, got %v", err)
+	}
+}
+
 // QA-22: with no API key the client is nil, and notes still work.
 func TestChangeStatus_NotionDisabledStillPublishes(t *testing.T) {
 	ctrl := gomock.NewController(t)

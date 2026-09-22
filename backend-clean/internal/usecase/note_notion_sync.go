@@ -18,6 +18,11 @@ type syncResult struct {
 	pageID   *string
 	pageURL  *string
 	syncedAt *time.Time
+
+	// created is true only when this call brought a brand new page into
+	// existence. Only such a page may be removed if the database write fails:
+	// a page that already existed must be left exactly as it was found.
+	created bool
 }
 
 // notionEnabled reports whether the integration is configured.
@@ -50,7 +55,9 @@ func (u *NoteCommandInteractor) syncStatusChange(
 		if err != nil {
 			return nil, wrapSyncErr(err)
 		}
-		return syncedNow(page), nil
+		res := syncedNow(page)
+		res.created = true
+		return res, nil
 
 	case notion.ActionRestore:
 		page, err := u.notion.Restore(ctx, sync.PageIDOrEmpty())
@@ -66,8 +73,14 @@ func (u *NoteCommandInteractor) syncStatusChange(
 		// The page id is kept so the same page can be restored later.
 		return nil, nil
 
-	case notion.ActionNone, notion.ActionUpdate:
+	case notion.ActionNone:
 		return nil, nil
+
+	case notion.ActionUpdate:
+		// Updating belongs to the edit path, so reaching it here means the
+		// decision table and this switch have drifted apart. Failing loudly is
+		// better than silently skipping a sync the caller asked for.
+		return nil, fmt.Errorf("notion: unexpected update action for status change to %q", to)
 	}
 	return nil, nil
 }
@@ -91,17 +104,21 @@ func (u *NoteCommandInteractor) syncEdit(ctx context.Context, current *note.With
 	return syncedNow(page), nil
 }
 
-// cleanUpOrphanPage trashes a page that was created but never recorded.
+// discardCreatedPage removes a page that was just created but whose id was
+// never stored, because the database write failed afterwards.
 //
-// Without this the page id is lost, so the page could never be found again
-// from the application. The cleanup itself can fail, in which case there is
-// nothing left to do but leave a trace for an operator.
-func (u *NoteCommandInteractor) cleanUpOrphanPage(ctx context.Context, res *syncResult, cause error) {
-	if res == nil || res.pageID == nil || !u.notionEnabled() {
+// Without this the id is lost and the page can never be found again from the
+// application. Pages that already existed are deliberately left untouched:
+// trashing one would destroy content the user still has published.
+//
+// The cleanup itself can fail, in which case there is nothing left to do but
+// leave the id behind for an operator.
+func (u *NoteCommandInteractor) discardCreatedPage(ctx context.Context, res *syncResult, cause error) {
+	if res == nil || !res.created || res.pageID == nil || !u.notionEnabled() {
 		return
 	}
 	if err := u.notion.Trash(ctx, *res.pageID); err != nil {
-		slog.ErrorContext(ctx, "orphan notion page left behind",
+		slog.ErrorContext(ctx, "failed to discard the notion page created for a failed write",
 			"page_id", *res.pageID, "cleanup_error", err, "cause", cause)
 	}
 }
