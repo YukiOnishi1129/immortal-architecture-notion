@@ -9,6 +9,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"net/url"
 	"time"
 
 	"immortal-architecture-notion/backend/internal/port"
@@ -132,17 +133,35 @@ func (c *Client) Restore(ctx context.Context, pageID string) (*port.NotionPage, 
 }
 
 // clearBlocks deletes every child block of a page.
+//
+// The children endpoint is paginated, so the list is walked with
+// next_cursor until has_more is false. Without this, a page holding
+// more than one batch of blocks would keep its leftover content.
 func (c *Client) clearBlocks(ctx context.Context, pageID string) error {
-	var listed blockChildrenResponse
-	if err := c.do(ctx, http.MethodGet, "/v1/blocks/"+pageID+"/children?page_size=100", nil, &listed); err != nil {
-		return err
-	}
-	for _, b := range listed.Results {
-		if err := c.do(ctx, http.MethodDelete, "/v1/blocks/"+b.ID, nil, nil); err != nil {
+	cursor := ""
+
+	for {
+		path := "/v1/blocks/" + pageID + "/children?page_size=100"
+		if cursor != "" {
+			path += "&start_cursor=" + url.QueryEscape(cursor)
+		}
+
+		var listed blockChildrenResponse
+		if err := c.do(ctx, http.MethodGet, path, nil, &listed); err != nil {
 			return err
 		}
+
+		for _, b := range listed.Results {
+			if err := c.do(ctx, http.MethodDelete, "/v1/blocks/"+b.ID, nil, nil); err != nil {
+				return err
+			}
+		}
+
+		if !listed.HasMore || listed.NextCursor == "" {
+			return nil
+		}
+		cursor = listed.NextCursor
 	}
-	return nil
 }
 
 // do sends one request, retrying on 429 and 5xx.
@@ -160,7 +179,10 @@ func (c *Client) do(ctx context.Context, method, path string, body any, out any)
 	for attempt := 0; attempt <= c.maxRetries; attempt++ {
 		if attempt > 0 {
 			// exponential backoff: 1s, 2s, 4s
-			c.sleep(time.Duration(math.Pow(2, float64(attempt-1))) * time.Second)
+			wait := time.Duration(math.Pow(2, float64(attempt-1))) * time.Second
+			if err := c.waitOrCancel(ctx, wait); err != nil {
+				return err
+			}
 		}
 
 		retryable, err := c.attempt(ctx, method, path, payload, out)
@@ -173,6 +195,23 @@ func (c *Client) do(ctx context.Context, method, path string, body any, out any)
 		}
 	}
 	return lastErr
+}
+
+// waitOrCancel sleeps for d, but returns early if the context is done.
+// Without this, a canceled caller would still wait out the full backoff.
+func (c *Client) waitOrCancel(ctx context.Context, d time.Duration) error {
+	done := make(chan struct{})
+	go func() {
+		c.sleep(d)
+		close(done)
+	}()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-done:
+		return nil
+	}
 }
 
 // attempt performs a single HTTP round trip.
@@ -238,4 +277,6 @@ type blockChildrenResponse struct {
 	Results []struct {
 		ID string `json:"id"`
 	} `json:"results"`
+	HasMore    bool   `json:"has_more"`
+	NextCursor string `json:"next_cursor"`
 }

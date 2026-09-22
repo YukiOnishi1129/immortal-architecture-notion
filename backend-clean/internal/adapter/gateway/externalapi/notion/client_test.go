@@ -391,6 +391,129 @@ func TestClient_ContextCancellation(t *testing.T) {
 
 	client := newTestClient(srv.URL, WithMaxRetries(0))
 	if _, err := client.CreatePage(ctx, "parent-1", "Title", nil); err == nil {
-		t.Fatal("expected an error for a cancelled context")
+		t.Fatal("expected an error for a canceled context")
+	}
+}
+
+func TestClient_UpdatePage_DeletesAllPages(t *testing.T) {
+	// The first children response reports more pages, so the client
+	// must follow next_cursor until has_more is false.
+	var deleted []string
+	var cursors []string
+	listCalls := 0
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/children"):
+			listCalls++
+			cursors = append(cursors, r.URL.Query().Get("start_cursor"))
+
+			if listCalls == 1 {
+				_, _ = w.Write([]byte(`{
+					"results":[{"id":"block-1"},{"id":"block-2"}],
+					"has_more":true,
+					"next_cursor":"cursor-abc"
+				}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{
+				"results":[{"id":"block-3"}],
+				"has_more":false,
+				"next_cursor":null
+			}`))
+
+		case r.Method == http.MethodDelete:
+			deleted = append(deleted, strings.TrimPrefix(r.URL.Path, "/v1/blocks/"))
+			_, _ = w.Write([]byte(`{"id":"block"}`))
+
+		default:
+			_, _ = w.Write([]byte(`{"id":"page-1","url":"https://notion.so/page-1"}`))
+		}
+	}))
+	defer srv.Close()
+
+	client := newTestClient(srv.URL)
+	if _, err := client.UpdatePage(context.Background(), "page-1", "Title", nil); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if listCalls != 2 {
+		t.Errorf("children list calls = %d, want 2", listCalls)
+	}
+	if len(cursors) == 2 && cursors[1] != "cursor-abc" {
+		t.Errorf("second start_cursor = %q, want cursor-abc", cursors[1])
+	}
+
+	want := []string{"block-1", "block-2", "block-3"}
+	if len(deleted) != len(want) {
+		t.Fatalf("deleted = %v, want %v", deleted, want)
+	}
+	for i := range want {
+		if deleted[i] != want[i] {
+			t.Errorf("deleted[%d] = %q, want %q", i, deleted[i], want[i])
+		}
+	}
+}
+
+func TestClient_UpdatePage_StopsWhenNoMorePages(t *testing.T) {
+	// has_more is false on the first response, so exactly one list call
+	// should be made even though a cursor value is present.
+	listCalls := 0
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/children") {
+			listCalls++
+			_, _ = w.Write([]byte(`{"results":[],"has_more":false,"next_cursor":"unused"}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"id":"page-1","url":"https://notion.so/page-1"}`))
+	}))
+	defer srv.Close()
+
+	client := newTestClient(srv.URL)
+	if _, err := client.UpdatePage(context.Background(), "page-1", "Title", nil); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if listCalls != 1 {
+		t.Errorf("children list calls = %d, want 1", listCalls)
+	}
+}
+
+func TestClient_BackoffIsCancellable(t *testing.T) {
+	// A retryable status keeps the client in its backoff loop.
+	// Cancelling the context must abort the wait instead of sleeping it out.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusTooManyRequests)
+		_, _ = w.Write([]byte(`{"code":"rate_limited","message":"slow down"}`))
+	}))
+	defer srv.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	client := NewClient("test-token",
+		WithBaseURL(srv.URL),
+		// A long sleep would block for 10s if cancellation were ignored.
+		WithSleep(func(time.Duration) { time.Sleep(10 * time.Second) }),
+	)
+
+	// Cancel while the client is waiting to retry.
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		cancel()
+	}()
+
+	start := time.Now()
+	_, err := client.CreatePage(ctx, "parent-1", "Title", nil)
+	elapsed := time.Since(start)
+
+	if err == nil {
+		t.Fatal("expected an error after cancellation")
+	}
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("error = %v, want context.Canceled", err)
+	}
+	if elapsed > 3*time.Second {
+		t.Errorf("returned after %v; backoff did not abort on cancellation", elapsed)
 	}
 }
