@@ -23,6 +23,12 @@ type Note struct {
 	Sections   []Section
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
+
+	// Notion integration. All nil until the note is synced to Notion
+	// for the first time. Publishing attempts the sync, but it can fail.
+	NotionPageID   *string
+	NotionPageURL  *string
+	NotionSyncedAt *time.Time
 }
 
 // Section represents note content for a field.
