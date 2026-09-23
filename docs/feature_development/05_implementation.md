@@ -31,7 +31,7 @@
 - backend-clean/docs/08_cqrs_architecture_guide.md
 
 【今回の設計】
-- docs/feature_development/02_design_policy.md
+- docs/feature_development/01_requirement_hearing.md
 - docs/feature_development/02_design_policy.md
 - docs/feature_development/03_test_strategy.md
 - docs/feature_development/04_work_breakdown.md
@@ -106,6 +106,7 @@ make sqlc-generate を実行し、生成物も一緒にコミット対象にす�
 【変更するもの】
 - api-schema/typespec/models/template.tsp
 - api-schema/typespec/models/note.tsp
+- api-schema/typespec/routes/notes.tsp
 
 【追加するフィールド】
 TemplateResponse / CreateTemplateRequest / UpdateTemplateRequest
@@ -113,6 +114,11 @@ TemplateResponse / CreateTemplateRequest / UpdateTemplateRequest
 
 NoteResponse
   + notionPageUrl
+
+【追加するエンドポイント】
+POST /notes/{noteId}/notion-sync
+  公開済み & 未連携のノートを手動で連携する（第2章⑦）
+  statusは変えない。レスポンスは NoteResponse
 
 【🚨 制約】
 すべて optional にしてください。
@@ -203,6 +209,18 @@ gateway/db/ が DB を担うのと同じ位置づけです。
 - template_interactor.go … URLからIDを抽出する処理
 - template_controller.go / presenter … API定義（PR1-b）に実装を合わせる
 
+【使用中テンプレートでも保存できるようにする】
+今の ReplaceFields は項目を全削除→再作成するため、ノートが使う項目を
+消せずDBエラーになります。設定したいテンプレートほど設定できません。
+
+- 保存の経路を2つにする（どちらを使うかは usecase が決める）
+  未使用 … ReplaceFields（全削除→再作成。今のまま）
+  使用中 … SyncFields（id があれば UPDATE、無ければ INSERT、
+           消えたものだけ DELETE）
+- (template_id, order) は UNIQUE。並べ替えが衝突するので、
+  更新対象を一度空き位置へ退避してから本来の値にする
+- 使用中の項目の変更・削除は usecase で拒否して 400 を返す
+
 【URLからIDを抽出する】
 https://notion.so/workspace/1429989fe8ac4effbc8f57f56486db54?v=...
                             └──── この32文字がID ────┘
@@ -213,7 +231,10 @@ https://notion.so/workspace/1429989fe8ac4effbc8f57f56486db54?v=...
 このPRでは、まだ公開処理に連携を組み込みません。
 
 【確認】
-PR0で追加したテストが全てパスすること
+□ 使用中テンプレートにもURLを設定できる
+□ 使用中の項目は変更できない（400）
+□ 未使用テンプレートで項目を並べ替えられる
+□ PR0で追加したテストが全てパスすること
 ```
 
 ### PR4 ChangeStatus / Update への組み込み
@@ -252,6 +273,12 @@ Notion作成に成功したあとDB更新が失敗したら、
 二度と特定できなくなるため）。
 掃除自体が失敗したら、ログに page_id を出力します。
 
+【手動連携も実装する】
+PR1-b で定義した POST /notes/{noteId}/notion-sync を実装してください。
+- statusは変えず、Notionページだけ作る
+- 公開済み & 未連携のときだけ実行できる（それ以外は400）
+- この機能より前に公開されたノートの救済（第2章⑦・QA-23）
+
 【🚨 制約4: フォールバック】
 NOTION_API_KEY が未設定のときは、連携をスキップして従来どおりの公開処理を
 行ってください（移行期間中の切り替えスイッチを兼ねます）。
@@ -279,10 +306,13 @@ PR0で追加した既存テストが全てパスすること。
 1つでも落ちたら、既存の振る舞いを壊しています。
 ```
 
-### PR5 テンプレート画面 + 使用中テンプレートの編集解禁
+### PR5 フロント: テンプレート画面
 
 ```
 04_work_breakdown.md の PR5 を実装してください。
+
+【変更するファイル】
+- frontend/src/features/template/ 配下
 
 【作るもの】
 1. テンプレート作成・編集画面に「NotionのURL」入力欄
@@ -290,25 +320,16 @@ PR0で追加した既存テストが全てパスすること。
    - 入力値はそのままAPIへ送る（IDの抽出はサーバー側が行う）
 2. 詳細画面に設定済みURLを表示
 3. 使用中テンプレートでも編集画面に入れるようにする
-
-【3 の内訳】
-- 保存の経路を2つにする（どちらを使うかは usecase が決める）
-  未使用 … ReplaceFields（全削除→再作成。今のまま）
-  使用中 … SyncFields（id があれば UPDATE、無ければ INSERT、
-           消えたものだけ DELETE）
-- (template_id, order) は UNIQUE。並べ替えが衝突するので、
-  更新対象を一度空き位置へ退避してから本来の値にする
-- 使用中の項目の変更・削除は usecase で拒否して 400 を返す
-- 画面でも項目を非活性にする（並べ替えも含む。名前とURLは編集できる）
+   - 項目は非活性にする（入力欄・追加・削除・並べ替え）
+   - 名前とURLは編集できる
+   - サーバーは PR3 で既に400を返す（画面と二重で守る）
 
 【型】
 PR1-b で生成済みの型を使ってください。手書きしないこと。
 
 【確認】
 □ 使用中テンプレートにURLを設定できる
-□ 使用中の項目は変更できない（画面・APIとも）
-□ 未使用テンプレートで項目を並べ替えられる
-□ 既存ノートのセクションが壊れていない
+□ 使用中の項目が画面で変更できない
 ```
 
 ### PR6 フロント: ノート詳細画面
@@ -326,7 +347,7 @@ PR1-b で生成済みの型を使ってください。手書きしないこと�
 3. 連携に失敗したときのエラー表示
    - もう一度押せば再試行になることを伝える
 4. 公開済みなのに未連携のノートに「連携する」ボタンを出す
-   - PR4より前に公開されたノートの救済（QA-23）
+   - PR4 で実装した notion-sync を呼ぶ（QA-23）
 5. 処理中はボタンを無効化する（二重送信でページが2つできるのを防ぐ）
 
 【確認】

@@ -96,8 +96,8 @@ publish が 200 を返す        … Controller のテストで分かる
 | UseCase | gomock | 処理の流れ、呼び出し順序 | 80%+ |
 | Gateway (Notion) | httptest | HTTPの扱い、リトライ | 80%+ |
 | Controller | httptest | ステータスコード | 80%+ |
-| シナリオ | 実DB + Notionモック | 操作をまたいだ状態の整合 | - |
-| E2E | 手動 | 本当に繋がるか | - |
+| API E2E | 実DB + Notionモック | 操作をまたいだ状態の整合 | - |
+| 手動E2E | 画面 + 実Notion | サービス全体が繋がるか | - |
 
 目標値は第2章の実測値が根拠です（`domain/service` が100%、`controller` が84.7%）。
 **既存を下回らないことが基準**です。
